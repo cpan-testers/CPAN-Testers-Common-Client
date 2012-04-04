@@ -26,9 +26,6 @@ sub new {
         $self->_get_prereqs( $params{build_dir} );
     }
 
-    $self->{_config}   = Config::Perl::V::myconfig();
-    $self->{_platform} = Devel::Platform::Info->new->get_info();
-
     return $self;
 }
 
@@ -97,6 +94,9 @@ sub populate {
     my $report = $self->report;
     Carp::croak 'please specify a resource before populating'
         unless $report;
+
+    $self->{_config}   = Config::Perl::V::myconfig();
+    $self->{_platform} = Devel::Platform::Info->new->get_info();
 
     my @facts = qw(
         LegacyReport TestSummary TestOutput TesterComment
@@ -364,7 +364,6 @@ L<http://rt.cpan.org>.
 =head1 AUTHOR
 
 Breno G. de Oliveira  C<< <garu@cpan.org> >>
-
 
 
 =head1 LICENCE AND COPYRIGHT
