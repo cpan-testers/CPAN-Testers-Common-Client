@@ -95,6 +95,7 @@ sub populate {
     Carp::croak 'please specify a resource before populating'
         unless $report;
 
+    # some data is repeated between facts, so we keep a 'cache'
     $self->{_config}   = Config::Perl::V::myconfig();
     $self->{_platform} = Devel::Platform::Info->new->get_info();
 
