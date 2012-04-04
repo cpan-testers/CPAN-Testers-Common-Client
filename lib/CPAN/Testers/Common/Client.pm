@@ -332,7 +332,7 @@ __END__
 
 =head1 NAME
 
-CPAN::Testers::Common::Client - Standard client for CPAN::Testers
+CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
 
 
 =head1 SYNOPSIS
