@@ -352,9 +352,41 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
           grade    => 'pass',
     );
 
+    # what you should send to CPAN Testers, via Metabase
     my $metabase_data = $client->populate;
     my $email_body    = $client->email;
 
+Although the recommended is to construct your object passing as much information as possible:
+
+    my $client = CPAN::Testers::Common::Client->new(
+          resource         => 'cpan:///distfile/RJBS/Data-UUID-1.217.tar.gz',
+          grade            => 'pass',
+          comments         => 'this is an auto-generated report. Cheers!',
+          configure_output => '...',
+          build_output     => '...',
+          test_output      => '...',
+
+          # same as in a META.yml 2.0 structure
+          prereqs => {
+              runtime => {
+                requires => {
+                  'File::Basename' => '0',
+                },
+                recommends => {
+                  'ExtUtils::ParseXS' => '2.02',
+                },
+              },
+              build => {
+                requires => {
+                  'Test::More' => '0',
+                },
+              },
+              # etc.
+          },
+          # alternatively, if the dist is expanded in a local dir and has a Meta 2.0 {json,yml} file
+          # you can just point us to the build_dir and we'll extract the prereqs ourselves:
+          # build_dir => '/tmp/Data-UUID-1.217/'
+    );
 
 =head1 DESCRIPTION
 
