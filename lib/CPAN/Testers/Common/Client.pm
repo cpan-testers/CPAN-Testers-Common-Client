@@ -99,7 +99,7 @@ sub populate {
     $self->{_platform} = Devel::Platform::Info->new->get_info();
 
     my @facts = qw(
-        LegacyReport TestSummary TestOutput TesterComment
+        TestSummary TestOutput TesterComment
         Prereqs InstalledModules
         PlatformInfo PerlConfig TestEnvironment
     );
@@ -108,10 +108,17 @@ sub populate {
         my $populator = '_populate_' . lc $fact;
         $self->{_data}{$fact} = $self->$populator->();
     }
+
+    # this has to be last, as it also composes the email
+    $self->{_data}{LegacyReport} = $self->_populate_legacyreport;
 }
 
 
-#=======================================
+#===========================================#
+# below are the functions that populate     #
+# the object with data, and their auxiliary #
+# functions.                                #
+#===========================================#
 
 sub _populate_platforminfo {
     my $self = shift;
