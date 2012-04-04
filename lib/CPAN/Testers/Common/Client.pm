@@ -339,6 +339,14 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
 
     use CPAN::Testers::Common::Client;
 
+    my $client = CPAN::Testers::Common::Client->new(
+          resource => 'cpan:///distfile/RJBS/Data-UUID-1.217.tar.gz',
+          grade    => 'pass',
+    );
+
+    my $metabase_data = $client->populate;
+    my $email_body    = $client->email;
+
 
 =head1 DESCRIPTION
 
@@ -354,6 +362,16 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
 =back
 
 
+=head2 Source Code
+
+This is open source software.  The code repository is available for
+public review and contribution under the terms of the license.
+
+L<https://github.com/garu/CPAN-Testers-Common-Client>
+
+  git clone https://github.com/garu/CPAN-Testers-Common-Client.git
+
+
 =head1 BUGS AND LIMITATIONS
 
 Please report any bugs or feature requests to
@@ -364,6 +382,24 @@ L<http://rt.cpan.org>.
 =head1 AUTHOR
 
 Breno G. de Oliveira  C<< <garu@cpan.org> >>
+
+
+=head1 ACKNOWLEDGMENTS
+
+This module was created at the L<http://2012.qa-hackathon.org|2012 Perl QA Hackathon>, so a big
+THANK YOU is in order to all the companies and organisations that supported it, namely the
+L<http://www.cite-sciences.fr/|Cité des Sciences>, L<http://www.diabolocom.com/|Diabolocom>,
+L<http://www.dijkmat.nl/|Dijkmat>, L<http://www.duckduckgo.com/|DuckDuckGo>,
+L<http://www.dyn.com/|Dyn>, L<http://freeside.biz/|Freeside>, L<http://www.hederatech.com/|Hedera>,
+L<http://www.jaguar-network.com/|Jaguar>, L<http://www.shadow.cat/|ShadowCat>,
+L<http://www.splio.com/|Splio>, L<http://www.teclib.com/|TECLIB'>, L<http://weborama.com/|Weborama>,
+L<http://www.enlightenedperl.org/|EPO>, L<http://www.perl-magazin.de/|$foo Magazin> and
+L<http://www.mongueurs.net/|Mongueurs de Perl>.
+
+Also, this module could never be done without the help of L<https://metacpan.org/author/DAGOLDEN|David Golden>,
+L<https://metacpan.org/author/BARBIE|Barbie> and L<https://metacpan.org/author/MIYAGAWA|Tatsuhiko Miyagawa>.
+
+All bugs and mistakes are my own.
 
 
 =head1 LICENCE AND COPYRIGHT
