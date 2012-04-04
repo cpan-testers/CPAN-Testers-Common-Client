@@ -124,39 +124,68 @@ sub _populate_perlconfig {
     return @{ $self->{_config} }{build,config};
 }
 
-# TODO:
-# AUTOMATED_TESTING = 1
-#    LANG = en_US.UTF-8
-#    LANGUAGE = en_US:en
-#    PATH = /usr/lib/ccache:/home/sand/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/usr/local/perl/bin:/usr/X11/bin:/sbin:/usr/sbin
-#    PERL5LIB = 
-#    PERL5OPT = 
-#    PERL5_CPANPLUS_IS_RUNNING = 31223
-#    PERL5_CPAN_IS_RUNNING = 31223
-#    PERL_AUTOINSTALL = --defaultdeps
-#    PERL_EXTUTILS_AUTOINSTALL = --defaultdeps
-#    PERL_MM_USE_DEFAULT = 1
-#    SHELL = /bin/bash
-#    TERM = screen
-#
-#Perl special variables (and OS-specific diagnostics, for MSWin32):
-#
-#    $^X = /home/sand/src/perl/repoperls/installed-perls/perl/perl-5.10.1/2b65c/bin/perl
-#    $UID/$EUID = 1001 / 1001
-#    $GID = 1001 1001
-#    $EGID = 1001 1001
-
 sub _populate_testenvironment {
+
     return {
-        environment_vars => {
-          PERL5LIB  => $ENV{PERL5LIB},
-          TEMP      => $ENV{TEMP},
-        },
-        special_vars => {
-          'EXECUTABLE_NAME' => $^X,
-          'UID'             => $<,
-        },
+        environment_vars => _get_env_vars(),
+        special_vars     => _get_special_vars(),
     };
+}
+
+sub _get_env_vars {
+    # Entries bracketed with "/" are taken to be a regex; otherwise literal
+    my @env_vars= qw(
+        /PERL/
+        /LC_/
+        /AUTHOR_TEST/
+        LANG
+        LANGUAGE
+        PATH
+        SHELL
+        COMSPEC
+        TERM
+        TEMP
+        TMPDIR
+        AUTOMATED_TESTING
+        INCLUDE
+        LIB
+        LD_LIBRARY_PATH
+        PROCESSOR_IDENTIFIER
+        NUMBER_OF_PROCESSORS
+    );
+
+    my %env_found = ();
+    foreach my $var ( @env_vars ) {
+        if ( $var =~ m{^/(.+)/$} ) {
+            my $re = $1;
+            foreach my $found ( grep { /$re/ } keys %ENV ) {
+                $env_found{$found} = $ENV{$found} if exists $ENV{$found};
+            }
+        }
+        else {
+            $env_found{$var} = $ENV{$var} if exists $ENV{$var};
+        }
+    }
+
+    return \%env_found;
+}
+
+sub _get_special_vars {
+    my %special_vars = (
+        EXECUTABLE_NAME => $^X,
+        UID             => $<,
+        EUID            => $>,
+        GID             => $(,
+        EGID            => $),
+    );
+
+    if ( $^O eq 'MSWin32' && eval 'require Win32' ) { ## no critic
+        $special_vars{'Win32::GetOSName'}    = Win32::GetOSName();
+        $special_vars{'Win32::GetOSVersion'} = join( ', ', Win32::GetOSVersion() );
+        $special_vars{'Win32::FsType'}       = Win32::FsType();
+        $special_vars{'Win32::IsAdminUser'}  = Win32::IsAdminUser();
+    }
+    return \%special_vars;
 }
 
 sub _populate_prereqs {
@@ -310,7 +339,7 @@ CPAN::Testers::Common::Client - Standard client for CPAN::Testers
 
     use CPAN::Testers::Common::Client;
 
-  
+
 =head1 DESCRIPTION
 
 
@@ -335,6 +364,7 @@ L<http://rt.cpan.org>.
 =head1 AUTHOR
 
 Breno G. de Oliveira  C<< <garu@cpan.org> >>
+
 
 
 =head1 LICENCE AND COPYRIGHT
