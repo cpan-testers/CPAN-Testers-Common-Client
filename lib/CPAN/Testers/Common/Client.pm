@@ -379,7 +379,70 @@ sub _version_finder {
     }
     return \%result;
 }
- 
+
+
+sub _format_prereq_report {
+    my $prereqs = shift;
+    my (%have, %prereq_met, $report);
+
+    my @prereq_sections = qw( runtime build configure );
+
+    # see what prereqs are satisfied in subprocess
+    foreach my $section ( @prereq_sections ) {
+        my $requires = $prereqs->{$section}{requires};
+        next unless $requires and ref $requires eq 'HASH';
+
+        my $results = _version_finder( %$requires );
+
+        foreach my $mod ( keys %$results ) {
+            $have{$section}{$mod} = $results->{$mod}{have};
+            $prereq_met{$section}{$mod} = $results->{$mod}{met};
+        }
+    }
+
+    # find formatting widths
+    my ($name_width, $need_width, $have_width) = (6, 4, 4);
+    foreach my $section ( @prereq_sections ) {
+        my %need = %{ $prereqs->{$section}{requires} };
+        foreach my $module ( keys %need ) {
+            my $name_length = length $module;
+            my $need_length = length $need{$module};
+            my $have_length = length $have{$section}{$module};
+            $name_width = $name_length if $name_length > $name_width;
+            $need_width = $need_length if $need_length > $need_width;
+            $have_width = $have_length if $have_length > $have_width;
+        }
+    }
+
+    my $format_str =
+        "  \%1s \%-${name_width}s \%-${need_width}s \%-${have_width}s\n";
+
+    # generate the report
+    foreach my $section ( @prereq_sections ) {
+      my %need = %{ $prereqs->{$section}{requires} };
+      if ( keys %need ) {
+        $report .= "$section:\n\n"
+                .  sprintf( $format_str, " ", qw/Module Need Have/ )
+                .  sprintf( $format_str, " ",
+                            "-" x $name_width,
+                            "-" x $need_width,
+                            "-" x $have_width
+                );
+
+        foreach my $module ( sort {lc $a cmp lc $b} keys %need ) {
+          my $need = $need{$module};
+          my $have = $have{$section}{$module};
+          my $bad = $prereq_met{$section}{$module} ? " " : "!";
+          $report .= sprintf( $format_str, $bad, $module, $need, $have);
+        }
+        $report .= "\n";
+      }
+    }
+
+    return $report || "    No requirements found\n";
+}
+
+
 sub email {
     my $self = shift;
 
