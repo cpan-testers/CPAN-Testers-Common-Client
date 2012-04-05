@@ -630,6 +630,14 @@ If the C<AUTOMATED_TESTING> environment variable is set to true, the default com
 
 Otherwise, the default message is C<'none provided'>.
 
+=head2 Source Code
+
+This is open source software.  The code repository is available for
+public review and contribution under the terms of the license.
+
+L<https://github.com/garu/CPAN-Testers-Common-Client>
+
+  git clone https://github.com/garu/CPAN-Testers-Common-Client.git
 
 
 =head1 DIAGNOSTICS
@@ -641,16 +649,6 @@ Otherwise, the default message is C<'none provided'>.
 [Description of error here]
 
 =back
-
-
-=head2 Source Code
-
-This is open source software.  The code repository is available for
-public review and contribution under the terms of the license.
-
-L<https://github.com/garu/CPAN-Testers-Common-Client>
-
-  git clone https://github.com/garu/CPAN-Testers-Common-Client.git
 
 
 =head1 BUGS AND LIMITATIONS
