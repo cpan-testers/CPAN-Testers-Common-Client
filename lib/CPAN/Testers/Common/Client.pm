@@ -7,6 +7,7 @@ use Devel::Platform::Info;
 use Probe::Perl;
 use Config::Perl::V;
 use Carp ();
+use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
 our $VERSION = '0.01';
 
