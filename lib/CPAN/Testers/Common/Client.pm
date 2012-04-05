@@ -18,7 +18,11 @@ sub new {
     $self->resource( $params{resource} ) if $params{resource};
     $self->grade( $params{grade} )       if $params{grade};
     $self->author( $params{author} )     if $params{author};
-    $self->via( $params{via} )           if $params{via};
+
+    $self->via( exists $params{via}
+                ? $params{via}
+                : "Your friendly CPAN Testers client version $VERSION"
+              );
 
     $self->comments( exists $params{comments}
                      ? $params{comments}
@@ -63,13 +67,7 @@ sub comments {
 
 sub via {
     my ($self, $via) = @_;
-
-    if ($via) {
-        $self->{_via} = $via;
-    }
-    elsif (!$self->{_via}) {
-        $self->{_via} = "Your friendly CPAN Testers client version $VERSION";
-    }
+    $self->{_via} = $via if $via;
     return $self->{_via};
 }
 
