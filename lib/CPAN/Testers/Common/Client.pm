@@ -380,6 +380,122 @@ sub _version_finder {
     return \%result;
 }
  
+sub email {
+    my $self = shift;
+
+    my %intro_para = (
+    'pass' => <<'HERE',
+Thank you for uploading your work to CPAN.  Congratulations!
+All tests were successful.
+HERE
+
+    'fail' => <<'HERE',
+Thank you for uploading your work to CPAN.  However, there was a problem
+testing your distribution.
+
+If you think this report is invalid, please consult the CPAN Testers Wiki
+for suggestions on how to avoid getting FAIL reports for missing library
+or binary dependencies, unsupported operating systems, and so on:
+
+http://wiki.cpantesters.org/wiki/CPANAuthorNotes
+HERE
+
+    'unknown' => <<'HERE',
+Thank you for uploading your work to CPAN.  However, attempting to
+test your distribution gave an inconclusive result.
+
+This could be because your distribution had an error during the make/build
+stage, did not define tests, tests could not be found, because your tests were
+interrupted before they finished, or because the results of the tests could not
+be parsed.  You may wish to consult the CPAN Testers Wiki:
+
+http://wiki.cpantesters.org/wiki/CPANAuthorNotes
+HERE
+
+    'na' => <<'HERE',
+Thank you for uploading your work to CPAN.  While attempting to build or test
+this distribution, the distribution signaled that support is not available
+either for this operating system or this version of Perl.  Nevertheless, any
+diagnostic output produced is provided below for reference.  If this is not
+what you expect, you may wish to consult the CPAN Testers Wiki:
+
+http://wiki.cpantesters.org/wiki/CPANAuthorNotes
+HERE
+
+);
+
+    my $metabase_data = $self->metabase_data;
+    my %data = (
+        author            => $self->author,
+        dist_name         => $self->distname,
+        perl_version      => $metabase_data->{TestSummary}{perl_version},
+        via               => $self->via,
+        grade             => $self->grade,
+        comment           => $self->comments,
+        test_log          => $metabase_data->{TestOutput}{test},
+        prereq_pm         => _format_prereq_report( $metabase_data->{Prereqs} ),
+        env_vars          => ,
+        special_vars      => ,
+        toolchain_version => ,
+    );
+
+    if ( length $data{test_log} > MAX_OUTPUT_LENGTH ) {
+        my $max_k = int(MAX_OUTPUT_LENGTH/1000) . "K";
+        $data{test_log} = substr( $data{test_log}, 0, MAX_OUTPUT_LENGTH)
+                        . "\n\n[Output truncated after $max_k]\n\n";
+    }
+
+    return <<"EOEMAIL";
+Dear $data{author},
+
+This is a computer-generated report for $data{dist_name}
+on perl $data{perl_version}, created by $data{via}.
+
+$intro_para{ $data{grade} }
+Sections of this report:
+
+    * Tester comments
+    * Program output
+    * Prerequisites
+    * Environment and other context
+
+------------------------------
+TESTER COMMENTS
+------------------------------
+
+Additional comments from tester:
+
+$data{comment}
+
+------------------------------
+PROGRAM OUTPUT
+------------------------------
+
+$data{test_log}
+------------------------------
+PREREQUISITES
+------------------------------
+
+Prerequisite modules loaded:
+
+$data{prereq_pm}
+------------------------------
+ENVIRONMENT AND OTHER CONTEXT
+------------------------------
+
+Environment variables:
+
+$data{env_vars}
+Perl special variables (and OS-specific diagnostics, for MSWin32):
+
+$data{special_vars}
+Perl module toolchain versions installed:
+
+$data{toolchain_versions}
+EOEMAIL
+
+}
+
 
 
 
