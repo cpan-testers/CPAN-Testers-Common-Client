@@ -18,6 +18,7 @@ sub new {
     $self->resource( $params{resource} ) if $params{resource};
     $self->grade( $params{grade} )       if $params{grade};
     $self->comments( $params{comments} ) if $params{comments};
+    $self->author( $params{author} )     if $params{author};
 
     if ( $params{prereqs} ) {
         $self->{_meta}{prereqs} = $params{prereqs}
@@ -57,6 +58,24 @@ sub comments {
 
     return $self->{_comment};
 }
+
+
+sub author {
+    my ($self, $author) = @_;
+    $self->{_author} = $author if $author;
+
+    # no author provided, let's try to use
+    # the PAUSE id of the resource
+    if ( !$self->{_author} ) {
+        my $dist = $self->resource;
+        if ( $dist =~ m{/(\w+)/[^/]$/} ) {
+            $self->{_author} = $1;
+        }
+    }
+
+    return $self->{_author};
+}
+
 
 #TODO: required
 sub grade {
