@@ -17,9 +17,15 @@ sub new {
 
     $self->resource( $params{resource} ) if $params{resource};
     $self->grade( $params{grade} )       if $params{grade};
-    $self->comments( $params{comments} ) if $params{comments};
     $self->author( $params{author} )     if $params{author};
     $self->via( $params{via} )           if $params{via};
+
+    $self->comments( exists $params{comments}
+                     ? $params{comments}
+                     : $ENV{AUTOMATED_TESTING}
+                     ? "this report is from an automated smoke testing program\nand was not reviewed by a human for accuracy"
+                     : 'none provided'
+                   );
 
     if ( $params{prereqs} ) {
         $self->{_meta}{prereqs} = $params{prereqs}
@@ -51,12 +57,7 @@ sub _get_prereqs {
 
 sub comments {
     my ($self, $comments) = @_;
-    $self->{_comment} = $comment ? $comment
-                      : $ENV{AUTOMATED_TESTING}
-                      ? "this report is from an automated smoke testing program\nand was not reviewed by a human for accuracy"
-                      : 'none provided'
-                      ;
-
+    $self->{_comment} = $comment if $comment;
     return $self->{_comment};
 }
 
