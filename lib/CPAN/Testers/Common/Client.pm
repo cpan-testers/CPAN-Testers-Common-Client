@@ -88,16 +88,6 @@ sub via {
 sub author {
     my ($self, $author) = @_;
     $self->{_author} = $author if $author;
-
-    # no author provided, let's try to use
-    # the PAUSE id of the resource
-    if ( !$self->{_author} ) {
-        my $dist = $self->resource;
-        if ( $dist =~ m{/(\w+)/[^/]$/} ) {
-            $self->{_author} = $1;
-        }
-    }
-
     return $self->{_author};
 }
 
