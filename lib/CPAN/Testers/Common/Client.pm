@@ -15,9 +15,22 @@ sub new {
     my ($class, %params) = @_;
     my $self  = bless {}, $class;
 
-    $self->resource( $params{resource} ) if $params{resource};
-    $self->grade( $params{grade} )       if $params{grade};
-    $self->author( $params{author} )     if $params{author};
+    Carp::croak 'Please specify a resource' unless %params and $params{resource};
+    $self->resource( $params{resource} );
+
+    Carp::croak 'Please specify a grade for the resource' unless $params{grade};
+    $self->grade( $params{grade} );
+
+    if ( $params{author} ) {
+        $self->author( $params{author} );
+    }
+    else {
+        # no author provided, let's try to use
+        # the PAUSE id of the resource
+        if ( $params{resource} =~ m{/(\w+)/[^/]$/} ) {
+            $self->author( $1 );
+        }
+    }
 
     $self->via( exists $params{via}
                 ? $params{via}
