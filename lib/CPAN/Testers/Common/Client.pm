@@ -19,6 +19,7 @@ sub new {
     $self->grade( $params{grade} )       if $params{grade};
     $self->comments( $params{comments} ) if $params{comments};
     $self->author( $params{author} )     if $params{author};
+    $self->via( $params{via} )           if $params{via};
 
     if ( $params{prereqs} ) {
         $self->{_meta}{prereqs} = $params{prereqs}
@@ -57,6 +58,18 @@ sub comments {
                       ;
 
     return $self->{_comment};
+}
+
+sub via {
+    my ($self, $via) = @_;
+
+    if ($via) {
+        $self->{_via} = $via;
+    }
+    elsif (!$self->{_via}) {
+        $self->{_via} = "Your friendly CPAN Testers client version $VERSION";
+    }
+    return $self->{_via};
 }
 
 
