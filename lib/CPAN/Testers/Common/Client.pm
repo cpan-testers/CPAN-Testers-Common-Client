@@ -6,7 +6,6 @@ use strict;
 use Devel::Platform::Info;
 use Probe::Perl;
 use Config::Perl::V;
-use Module::InstalledVersion;
 use Carp ();
 
 our $VERSION = '0.01';
@@ -295,13 +294,7 @@ sub _populate_installedmodules {
         version
     );
 
-    my $installed = {};
-    foreach my $mod (@toolchain_mods) {
-        my $m = Module::InstalledVersion->new( $mod );
-        $installed->{$_} = $m->{version} if $m->{version};
-    }
-
-    return $installed; 
+    return _version_finder( map { $_ => 0 } @toolchain_mods );
 }
 
 sub _populate_legacyreport {
