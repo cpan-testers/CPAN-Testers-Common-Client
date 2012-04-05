@@ -619,6 +619,19 @@ Although the recommended is to construct your object passing as much information
 =head1 DESCRIPTION
 
 
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=head2 AUTOMATED_TESTING
+
+If the C<AUTOMATED_TESTING> environment variable is set to true, the default comment will be:
+
+   this report is from an automated smoke testing program
+   and was not reviewed by a human for accuracy
+
+Otherwise, the default message is C<'none provided'>.
+
+
+
 =head1 DIAGNOSTICS
 
 =over 4
