@@ -49,7 +49,12 @@ sub _get_prereqs {
 
 sub comments {
     my ($self, $comments) = @_;
-    $self->{_comment} = $comment if $comment;
+    $self->{_comment} = $comment ? $comment
+                      : $ENV{AUTOMATED_TESTING}
+                      ? "this report is from an automated smoke testing program\nand was not reviewed by a human for accuracy"
+                      : 'none provided'
+                      ;
+
     return $self->{_comment};
 }
 
