@@ -91,6 +91,22 @@ sub author {
     return $self->{_author};
 }
 
+sub distname {
+    my ($self, $distname) = @_;
+    $self->{_distname} = $distname if $distname;
+
+    # no distname provided, let's try
+    # to figure out from the resource
+    if ( !$self->{_distname} ) {
+        my $dist = $self->resource;
+        $self->{_distname} = File::Basename::basename(
+            $dist,
+            qr/\.(?:tar\.(bz2|gz|Z)|t(?:gz|bz)|zip)/
+        );
+    }
+
+    return $self->{_distname};
+}
 
 #TODO: required
 sub grade {
