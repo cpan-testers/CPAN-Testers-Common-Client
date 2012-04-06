@@ -167,6 +167,8 @@ sub populate {
     $self->{_data}{LegacyReport} = $self->_populate_legacyreport;
 }
 
+sub metabase_data { return shift->{_data} }
+
 sub email {
     my $self = shift;
 
@@ -211,7 +213,7 @@ HERE
 
 );
 
-    my $metabase_data = $self->metabase_data;
+    my $metabase_data = $self->metabase_data || $self->populate;
     my %data = (
         author            => $self->author,
         dist_name         => $self->distname,
