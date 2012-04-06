@@ -68,7 +68,7 @@ sub new {
 #======================================
 
 sub comments {
-    my ($self, $comments) = @_;
+    my ($self, $comment) = @_;
     $self->{_comment} = $comment if $comment;
     return $self->{_comment};
 }
