@@ -354,11 +354,11 @@ sub _version_finder {
     my $perl = Probe::Perl->find_perl_interpreter();
     my @prereq_results;
  
-    my $prereq_input = _temp_filename( 'CPAN-Reporter-PI-' );
-    my $fh = IO::File->new( $prereq_input, "w" )
+    my $prereq_input = _temp_filename( 'CTCC-' );
+    open my $fh, '>', $prereq_input
         or die "Could not create temporary '$prereq_input' for prereq analysis: $!";
-    $fh->print( map { "$_ $prereqs{$_}\n" } keys %prereqs );
-    $fh->close;
+    print( $fh, map { "$_ $prereqs{$_}\n" } keys %prereqs );
+    close $fh;
  
     my $prereq_result = capture { system( $perl, $version_finder, '<', $prereq_input ) };
  
@@ -369,10 +369,7 @@ sub _version_finder {
         next unless length $line;
         my ($mod, $met, $have) = split " ", $line;
         unless ( defined($mod) && defined($met) && defined($have) ) {
-            $CPAN::Frontend->mywarn(
-                "Error parsing output from CPAN::Reporter::PrereqCheck:\n" .
-                $line
-            );
+            warn "Error parsing output from CPAN::Reporter::PrereqCheck:\n$line";
             next;
         }
         $result{$mod}{have} = $have;
