@@ -111,14 +111,12 @@ sub distname {
     return $self->{_distname};
 }
 
-#TODO: required
 sub grade {
     my ($self, $grade) = @_;
     $self->{_grade} = $grade if $grade;
     return $self->{_grade};
 }
 
-#TODO: required
 sub resource {
     my ($self, $resource) = @_;
 
