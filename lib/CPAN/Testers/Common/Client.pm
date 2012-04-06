@@ -9,6 +9,7 @@ use Config::Perl::V;
 use Carp ();
 use File::Spec;
 use Capture::Tiny qw(capture);
+use Metabase::Resource;
 
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
@@ -55,9 +56,7 @@ sub _init {
     else {
         # no author provided, let's try to use
         # the PAUSE id of the resource
-        if ( $params{resource} =~ m{/(\w+)/[^/]$/} ) {
-            $self->author( $1 );
-        }
+        $self->author( $self->resource->metadata->{cpan_id} || 'author' );
     }
 
     $self->via( exists $params{via}
@@ -122,14 +121,10 @@ sub resource {
     my ($self, $resource) = @_;
 
     if ($resource) {
-        $self->{_resource} = $resource;
-
-        #FIXME: decouple?
-        $self->report(
-            CPAN::Testers::Report->open(
-                resource => $resource,
-            )
-        );
+        $self->{_resource} = ref $resource and ref $resource eq 'Metabase::Resource'
+                           ? $resource
+                           : Metabase::Resource->new( $resource )
+                           ;
     }
 
     return $self->{_resource};
