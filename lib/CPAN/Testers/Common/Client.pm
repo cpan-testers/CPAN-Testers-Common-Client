@@ -14,6 +14,11 @@ use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
 our $VERSION = '0.01';
 
+
+#==================================
+#  CONSTRUCTOR
+#==================================
+
 sub new {
     my ($class, %params) = @_;
     my $self  = bless {}, $class;
@@ -57,23 +62,10 @@ sub new {
     return $self;
 }
 
-sub _get_prereqs {
-    my ($self, $dir) = @_;
-    my $meta;
 
-    foreach my $meta_file ( qw( META.json META.yml META.yaml ) ) {
-        my $meta_path = File::Spec->catfile( $dir, $meta_file );
-        if (-e $meta_path) {
-            $meta = eval { Parse::CPAN::Meta->load_file( $dir ) };
-            last if $meta;
-        }
-    }
-
-    if ($meta and $meta->{meta-spec}{version} < 2) {
-        $self->{_meta}{prereqs} = $meta->{prereqs};
-    }
-    return;
-}
+#======================================
+#  ACCESSORS
+#======================================
 
 sub comments {
     my ($self, $comments) = @_;
@@ -86,7 +78,6 @@ sub via {
     $self->{_via} = $via if $via;
     return $self->{_via};
 }
-
 
 sub author {
     my ($self, $author) = @_;
@@ -145,6 +136,12 @@ sub report {
     return $self->{_report};
 }
 
+
+#====================================
+#  PUBLIC METHODS
+#====================================
+
+
 sub populate {
     my $self = shift;
     my $report = $self->report;
@@ -169,346 +166,6 @@ sub populate {
     # this has to be last, as it also composes the email
     $self->{_data}{LegacyReport} = $self->_populate_legacyreport;
 }
-
-
-#===========================================#
-# below are the functions that populate     #
-# the object with data, and their auxiliary #
-# functions.                                #
-#===========================================#
-
-sub _populate_platforminfo {
-    my $self = shift;
-    return $self->{_platform};
-}
-
-
-sub _populate_perlconfig {
-    my $self = shift;
-    return @{ $self->{_config} }{build,config};
-}
-
-sub _populate_testenvironment {
-
-    return {
-        environment_vars => _get_env_vars(),
-        special_vars     => _get_special_vars(),
-    };
-}
-
-sub _get_env_vars {
-    # Entries bracketed with "/" are taken to be a regex; otherwise literal
-    my @env_vars= qw(
-        /PERL/
-        /LC_/
-        /AUTHOR_TEST/
-        LANG
-        LANGUAGE
-        PATH
-        SHELL
-        COMSPEC
-        TERM
-        TEMP
-        TMPDIR
-        AUTOMATED_TESTING
-        INCLUDE
-        LIB
-        LD_LIBRARY_PATH
-        PROCESSOR_IDENTIFIER
-        NUMBER_OF_PROCESSORS
-    );
-
-    my %env_found = ();
-    foreach my $var ( @env_vars ) {
-        if ( $var =~ m{^/(.+)/$} ) {
-            my $re = $1;
-            foreach my $found ( grep { /$re/ } keys %ENV ) {
-                $env_found{$found} = $ENV{$found} if exists $ENV{$found};
-            }
-        }
-        else {
-            $env_found{$var} = $ENV{$var} if exists $ENV{$var};
-        }
-    }
-
-    return \%env_found;
-}
-
-sub _get_special_vars {
-    my %special_vars = (
-        EXECUTABLE_NAME => $^X,
-        UID             => $<,
-        EUID            => $>,
-        GID             => $(,
-        EGID            => $),
-    );
-
-    if ( $^O eq 'MSWin32' && eval 'require Win32' ) { ## no critic
-        $special_vars{'Win32::GetOSName'}    = Win32::GetOSName();
-        $special_vars{'Win32::GetOSVersion'} = join( ', ', Win32::GetOSVersion() );
-        $special_vars{'Win32::FsType'}       = Win32::FsType();
-        $special_vars{'Win32::IsAdminUser'}  = Win32::IsAdminUser();
-    }
-    return \%special_vars;
-}
-
-sub _populate_prereqs {
-    my $self = shift;
-    
-    return {
-        configure_requires => $self->{_meta}{configure_requires},
-        build_requires     => $self->{_meta}{build_requires},
-        requires           => $self->{_meta}{requires},
-    };
-}
-
-sub _populate_testercomment {
-    my $self = shift;
-    return $self->comments;
-}
-
-sub _populate_installedmodules {
-    my $self = shift;
-
-    my @toolchain_mods= qw(
-        CPAN
-        CPAN::Meta
-        Cwd
-        ExtUtils::CBuilder
-        ExtUtils::Command
-        ExtUtils::Install
-        ExtUtils::MakeMaker
-        ExtUtils::Manifest
-        ExtUtils::ParseXS
-        File::Spec
-        JSON
-        JSON::PP
-        Module::Build
-        Module::Signature
-        Parse::CPAN::Meta
-        Test::Harness
-        Test::More
-        YAML
-        YAML::Syck
-        version
-    );
-
-    my $results = _version_finder( map { $_ => 0 } @toolchain_mods );
-
-    my %toolchain = map { $_ => $results->{$_}{have} } @toolchain_mods;
-    my %prereqs = ();
-
-    return { prereqs => \%prereqs, toolchain => \%toolchain };
-}
-
-sub _format_vars_report {
-    my $variables = shift;
-
-    my $report = "";
-    foreach my $var ( sort keys %$variables ) {
-        my $value = $variables->{$var};
-        $value = '[undef]' if ! defined $value;
-        $report .= "    $var = $value\n";
-    }
-    return $report;
-}
-
-sub _format_toolchain_report {
-    my $installed = shift;
-
-    my $mod_width = _max_length( keys %$installed );
-    my $ver_width = _max_length(
-        map { $installed->{$_}{have} } keys %$installed
-    );
-
-    my $format = "    \%-${mod_width}s \%-${ver_width}s\n";
-
-    my $report = "";
-    $report .= sprintf( $format, "Module", "Have" );
-    $report .= sprintf( $format, "-" x $mod_width, "-" x $ver_width );
-
-    for my $var ( sort keys %$installed ) {
-        $report .= sprintf("    \%-${mod_width}s \%-${ver_width}s\n",
-                            $var, $installed->{$var}{have} );
-    }
-
-    return $report;
-}
-
-sub _max_length {
-    my ($first, @rest) = @_;
-    my $max = length $first;
-    for my $term ( @rest ) {
-        $max = length $term if length $term > $max;
-    }
-    return $max;
-}
-
-sub _populate_legacyreport {
-    my $self = shift;
-    Carp::croak 'grade missing for LegacyReport'
-        unless $self->grade;
-
-    return {
-        %{ $self->TestSummary },
-        textreport => $self->textreport
-    }
-}
-
-sub _populate_testsummary {
-    my $self = shift;
-
-    return {
-        grade        => $self->grade,
-        osname       => $self->{_platform}{osname},
-        osversion    => $self->{_platform}{osvers},
-        archname     => $self->{_platform}{archname},
-        perl_version => $self->{_config}{version},
-    }
-}
-
-sub _populate_testoutput {
-    my $self = shift;
-    return {
-        configure => $self->{_build}{configure},
-        build     => $self->{_build}{build},
-        test      => $self->{_build}{test},
-    };
-}
-
-
-#--------------------------------------------------------------------------#
-# _temp_filename -- stand-in for File::Temp for backwards compatibility
-#
-# takes an optional prefix, adds 8 random chars and returns
-# an absolute pathname
-#
-# NOTE -- manual unlink required
-#--------------------------------------------------------------------------#
-
-sub _temp_filename {
-    my ($prefix) = @_;
-    # @CHARS from File::Temp
-    my @CHARS = (qw/ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
-                 a b c d e f g h i j k l m n o p q r s t u v w x y z
-                 0 1 2 3 4 5 6 7 8 9 _
-             /);
-
-    $prefix = q{} unless defined $prefix;
-    $prefix .= $CHARS[ int( rand(@CHARS) ) ] for 0 .. 7;
-    return File::Spec->catfile(File::Spec->tmpdir(), $prefix);
-}
-
-
-#--------------------------------------------------------------------------#
-# _version_finder
-#
-# module => version pairs
-#
-# This is done via an external program to show installed versions exactly
-# the way they would be found when test programs are run.  This means that
-# any updates to PERL5LIB will be reflected in the results.
-#
-# File-finding logic taken from CPAN::Module::inst_file().  Logic to
-# handle newer Module::Build prereq syntax is taken from
-# CPAN::Distribution::unsat_prereq()
-#
-#--------------------------------------------------------------------------#
- 
-my $version_finder = $INC{'CPAN/Testers/Common/Client/PrereqCheck.pm'};
- 
-sub _version_finder {
-    my %prereqs = @_;
- 
-    my $perl = Probe::Perl->find_perl_interpreter();
-    my @prereq_results;
- 
-    my $prereq_input = _temp_filename( 'CTCC-' );
-    open my $fh, '>', $prereq_input
-        or die "Could not create temporary '$prereq_input' for prereq analysis: $!";
-    print( $fh, map { "$_ $prereqs{$_}\n" } keys %prereqs );
-    close $fh;
- 
-    my $prereq_result = capture { system( $perl, $version_finder, '<', $prereq_input ) };
- 
-    unlink $prereq_input;
- 
-    my %result;
-    for my $line ( split "\n", $prereq_result ) {
-        next unless length $line;
-        my ($mod, $met, $have) = split " ", $line;
-        unless ( defined($mod) && defined($met) && defined($have) ) {
-            warn "Error parsing output from CPAN::Reporter::PrereqCheck:\n$line";
-            next;
-        }
-        $result{$mod}{have} = $have;
-        $result{$mod}{met} = $met;
-    }
-    return \%result;
-}
-
-
-sub _format_prereq_report {
-    my $prereqs = shift;
-    my (%have, %prereq_met, $report);
-
-    my @prereq_sections = qw( runtime build configure );
-
-    # see what prereqs are satisfied in subprocess
-    foreach my $section ( @prereq_sections ) {
-        my $requires = $prereqs->{$section}{requires};
-        next unless $requires and ref $requires eq 'HASH';
-
-        my $results = _version_finder( %$requires );
-
-        foreach my $mod ( keys %$results ) {
-            $have{$section}{$mod} = $results->{$mod}{have};
-            $prereq_met{$section}{$mod} = $results->{$mod}{met};
-        }
-    }
-
-    # find formatting widths
-    my ($name_width, $need_width, $have_width) = (6, 4, 4);
-    foreach my $section ( @prereq_sections ) {
-        my %need = %{ $prereqs->{$section}{requires} };
-        foreach my $module ( keys %need ) {
-            my $name_length = length $module;
-            my $need_length = length $need{$module};
-            my $have_length = length $have{$section}{$module};
-            $name_width = $name_length if $name_length > $name_width;
-            $need_width = $need_length if $need_length > $need_width;
-            $have_width = $have_length if $have_length > $have_width;
-        }
-    }
-
-    my $format_str =
-        "  \%1s \%-${name_width}s \%-${need_width}s \%-${have_width}s\n";
-
-    # generate the report
-    foreach my $section ( @prereq_sections ) {
-      my %need = %{ $prereqs->{$section}{requires} };
-      if ( keys %need ) {
-        $report .= "$section:\n\n"
-                .  sprintf( $format_str, " ", qw/Module Need Have/ )
-                .  sprintf( $format_str, " ",
-                            "-" x $name_width,
-                            "-" x $need_width,
-                            "-" x $have_width
-                );
-
-        foreach my $module ( sort {lc $a cmp lc $b} keys %need ) {
-          my $need = $need{$module};
-          my $have = $have{$section}{$module};
-          my $bad = $prereq_met{$section}{$module} ? " " : "!";
-          $report .= sprintf( $format_str, $bad, $module, $need, $have);
-        }
-        $report .= "\n";
-      }
-    }
-
-    return $report || "    No requirements found\n";
-}
-
 
 sub email {
     my $self = shift;
@@ -627,6 +284,372 @@ EOEMAIL
 }
 
 
+
+#===================================================
+# POPULATORS -- these functions populate
+# the object with data, triggered by the
+# populate() method.
+#===================================================
+
+sub _populate_platforminfo {
+    my $self = shift;
+    return $self->{_platform};
+}
+
+
+sub _populate_perlconfig {
+    my $self = shift;
+    return @{ $self->{_config} }{build,config};
+}
+
+sub _populate_testenvironment {
+
+    return {
+        environment_vars => _get_env_vars(),
+        special_vars     => _get_special_vars(),
+    };
+}
+
+sub _populate_prereqs {
+    my $self = shift;
+    
+    return {
+        configure_requires => $self->{_meta}{configure_requires},
+        build_requires     => $self->{_meta}{build_requires},
+        requires           => $self->{_meta}{requires},
+    };
+}
+
+sub _populate_testercomment {
+    my $self = shift;
+    return $self->comments;
+}
+
+sub _populate_installedmodules {
+    my $self = shift;
+
+    my @toolchain_mods= qw(
+        CPAN
+        CPAN::Meta
+        Cwd
+        ExtUtils::CBuilder
+        ExtUtils::Command
+        ExtUtils::Install
+        ExtUtils::MakeMaker
+        ExtUtils::Manifest
+        ExtUtils::ParseXS
+        File::Spec
+        JSON
+        JSON::PP
+        Module::Build
+        Module::Signature
+        Parse::CPAN::Meta
+        Test::Harness
+        Test::More
+        YAML
+        YAML::Syck
+        version
+    );
+
+    my $results = _version_finder( map { $_ => 0 } @toolchain_mods );
+
+    my %toolchain = map { $_ => $results->{$_}{have} } @toolchain_mods;
+    my %prereqs = ();
+
+    return { prereqs => \%prereqs, toolchain => \%toolchain };
+}
+
+
+sub _populate_legacyreport {
+    my $self = shift;
+    Carp::croak 'grade missing for LegacyReport'
+        unless $self->grade;
+
+    return {
+        %{ $self->TestSummary },
+        textreport => $self->textreport
+    }
+}
+
+sub _populate_testsummary {
+    my $self = shift;
+
+    return {
+        grade        => $self->grade,
+        osname       => $self->{_platform}{osname},
+        osversion    => $self->{_platform}{osvers},
+        archname     => $self->{_platform}{archname},
+        perl_version => $self->{_config}{version},
+    }
+}
+
+sub _populate_testoutput {
+    my $self = shift;
+    return {
+        configure => $self->{_build}{configure},
+        build     => $self->{_build}{build},
+        test      => $self->{_build}{test},
+    };
+}
+
+
+#=====================================================
+#  FORMATTERS -- functions to aid email formatting
+#=====================================================
+
+sub _format_vars_report {
+    my $variables = shift;
+
+    my $report = "";
+    foreach my $var ( sort keys %$variables ) {
+        my $value = $variables->{$var};
+        $value = '[undef]' if ! defined $value;
+        $report .= "    $var = $value\n";
+    }
+    return $report;
+}
+
+sub _format_toolchain_report {
+    my $installed = shift;
+
+    my $mod_width = _max_length( keys %$installed );
+    my $ver_width = _max_length(
+        map { $installed->{$_}{have} } keys %$installed
+    );
+
+    my $format = "    \%-${mod_width}s \%-${ver_width}s\n";
+
+    my $report = "";
+    $report .= sprintf( $format, "Module", "Have" );
+    $report .= sprintf( $format, "-" x $mod_width, "-" x $ver_width );
+
+    for my $var ( sort keys %$installed ) {
+        $report .= sprintf("    \%-${mod_width}s \%-${ver_width}s\n",
+                            $var, $installed->{$var}{have} );
+    }
+
+    return $report;
+}
+
+
+sub _format_prereq_report {
+    my $prereqs = shift;
+    my (%have, %prereq_met, $report);
+
+    my @prereq_sections = qw( runtime build configure );
+
+    # see what prereqs are satisfied in subprocess
+    foreach my $section ( @prereq_sections ) {
+        my $requires = $prereqs->{$section}{requires};
+        next unless $requires and ref $requires eq 'HASH';
+
+        my $results = _version_finder( %$requires );
+
+        foreach my $mod ( keys %$results ) {
+            $have{$section}{$mod} = $results->{$mod}{have};
+            $prereq_met{$section}{$mod} = $results->{$mod}{met};
+        }
+    }
+
+    # find formatting widths
+    my ($name_width, $need_width, $have_width) = (6, 4, 4);
+    foreach my $section ( @prereq_sections ) {
+        my %need = %{ $prereqs->{$section}{requires} };
+        foreach my $module ( keys %need ) {
+            my $name_length = length $module;
+            my $need_length = length $need{$module};
+            my $have_length = length $have{$section}{$module};
+            $name_width = $name_length if $name_length > $name_width;
+            $need_width = $need_length if $need_length > $need_width;
+            $have_width = $have_length if $have_length > $have_width;
+        }
+    }
+
+    my $format_str =
+        "  \%1s \%-${name_width}s \%-${need_width}s \%-${have_width}s\n";
+
+    # generate the report
+    foreach my $section ( @prereq_sections ) {
+      my %need = %{ $prereqs->{$section}{requires} };
+      if ( keys %need ) {
+        $report .= "$section:\n\n"
+                .  sprintf( $format_str, " ", qw/Module Need Have/ )
+                .  sprintf( $format_str, " ",
+                            "-" x $name_width,
+                            "-" x $need_width,
+                            "-" x $have_width
+                );
+
+        foreach my $module ( sort {lc $a cmp lc $b} keys %need ) {
+          my $need = $need{$module};
+          my $have = $have{$section}{$module};
+          my $bad = $prereq_met{$section}{$module} ? " " : "!";
+          $report .= sprintf( $format_str, $bad, $module, $need, $have);
+        }
+        $report .= "\n";
+      }
+    }
+
+    return $report || "    No requirements found\n";
+}
+
+
+#==============================================
+# AUXILIARY (PRIVATE) METHODS AND FUNCTIONS
+#==============================================
+
+sub _get_env_vars {
+    # Entries bracketed with "/" are taken to be a regex; otherwise literal
+    my @env_vars= qw(
+        /PERL/
+        /LC_/
+        /AUTHOR_TEST/
+        LANG
+        LANGUAGE
+        PATH
+        SHELL
+        COMSPEC
+        TERM
+        TEMP
+        TMPDIR
+        AUTOMATED_TESTING
+        INCLUDE
+        LIB
+        LD_LIBRARY_PATH
+        PROCESSOR_IDENTIFIER
+        NUMBER_OF_PROCESSORS
+    );
+
+    my %env_found = ();
+    foreach my $var ( @env_vars ) {
+        if ( $var =~ m{^/(.+)/$} ) {
+            my $re = $1;
+            foreach my $found ( grep { /$re/ } keys %ENV ) {
+                $env_found{$found} = $ENV{$found} if exists $ENV{$found};
+            }
+        }
+        else {
+            $env_found{$var} = $ENV{$var} if exists $ENV{$var};
+        }
+    }
+
+    return \%env_found;
+}
+
+sub _get_special_vars {
+    my %special_vars = (
+        EXECUTABLE_NAME => $^X,
+        UID             => $<,
+        EUID            => $>,
+        GID             => $(,
+        EGID            => $),
+    );
+
+    if ( $^O eq 'MSWin32' && eval 'require Win32' ) { ## no critic
+        $special_vars{'Win32::GetOSName'}    = Win32::GetOSName();
+        $special_vars{'Win32::GetOSVersion'} = join( ', ', Win32::GetOSVersion() );
+        $special_vars{'Win32::FsType'}       = Win32::FsType();
+        $special_vars{'Win32::IsAdminUser'}  = Win32::IsAdminUser();
+    }
+    return \%special_vars;
+}
+
+sub _get_prereqs {
+    my ($self, $dir) = @_;
+    my $meta;
+
+    foreach my $meta_file ( qw( META.json META.yml META.yaml ) ) {
+        my $meta_path = File::Spec->catfile( $dir, $meta_file );
+        if (-e $meta_path) {
+            $meta = eval { Parse::CPAN::Meta->load_file( $dir ) };
+            last if $meta;
+        }
+    }
+
+    if ($meta and $meta->{meta-spec}{version} < 2) {
+        $self->{_meta}{prereqs} = $meta->{prereqs};
+    }
+    return;
+}
+
+sub _max_length {
+    my ($first, @rest) = @_;
+    my $max = length $first;
+    for my $term ( @rest ) {
+        $max = length $term if length $term > $max;
+    }
+    return $max;
+}
+
+#--------------------------------------------------------------------------#
+# _temp_filename -- stand-in for File::Temp for backwards compatibility
+#
+# takes an optional prefix, adds 8 random chars and returns
+# an absolute pathname
+#
+# NOTE -- manual unlink required
+#--------------------------------------------------------------------------#
+
+sub _temp_filename {
+    my ($prefix) = @_;
+    # @CHARS from File::Temp
+    my @CHARS = (qw/ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+                 a b c d e f g h i j k l m n o p q r s t u v w x y z
+                 0 1 2 3 4 5 6 7 8 9 _
+             /);
+
+    $prefix = q{} unless defined $prefix;
+    $prefix .= $CHARS[ int( rand(@CHARS) ) ] for 0 .. 7;
+    return File::Spec->catfile(File::Spec->tmpdir(), $prefix);
+}
+
+
+#--------------------------------------------------------------------------#
+# _version_finder
+#
+# module => version pairs
+#
+# This is done via an external program to show installed versions exactly
+# the way they would be found when test programs are run.  This means that
+# any updates to PERL5LIB will be reflected in the results.
+#
+# File-finding logic taken from CPAN::Module::inst_file().  Logic to
+# handle newer Module::Build prereq syntax is taken from
+# CPAN::Distribution::unsat_prereq()
+#
+#--------------------------------------------------------------------------#
+ 
+my $version_finder = $INC{'CPAN/Testers/Common/Client/PrereqCheck.pm'};
+ 
+sub _version_finder {
+    my %prereqs = @_;
+ 
+    my $perl = Probe::Perl->find_perl_interpreter();
+    my @prereq_results;
+ 
+    my $prereq_input = _temp_filename( 'CTCC-' );
+    open my $fh, '>', $prereq_input
+        or die "Could not create temporary '$prereq_input' for prereq analysis: $!";
+    print( $fh, map { "$_ $prereqs{$_}\n" } keys %prereqs );
+    close $fh;
+ 
+    my $prereq_result = capture { system( $perl, $version_finder, '<', $prereq_input ) };
+ 
+    unlink $prereq_input;
+ 
+    my %result;
+    for my $line ( split "\n", $prereq_result ) {
+        next unless length $line;
+        my ($mod, $met, $have) = split " ", $line;
+        unless ( defined($mod) && defined($met) && defined($have) ) {
+            warn "Error parsing output from CPAN::Reporter::PrereqCheck:\n$line";
+            next;
+        }
+        $result{$mod}{have} = $have;
+        $result{$mod}{met} = $met;
+    }
+    return \%result;
+}
 
 
 42;
