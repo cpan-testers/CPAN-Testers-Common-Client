@@ -675,15 +675,23 @@ L<http://www.splio.com/|Splio>, L<http://www.teclib.com/|TECLIB'>, L<http://webo
 L<http://www.enlightenedperl.org/|EPO>, L<http://www.perl-magazin.de/|$foo Magazin> and
 L<http://www.mongueurs.net/|Mongueurs de Perl>.
 
-Also, this module could never be done without the help of L<https://metacpan.org/author/DAGOLDEN|David Golden>,
-L<https://metacpan.org/author/BARBIE|Barbie> and L<https://metacpan.org/author/MIYAGAWA|Tatsuhiko Miyagawa>.
+Also, this module could never be done without the help, contribution and insights of
+L<https://metacpan.org/author/DAGOLDEN|David Golden>,
+L<https://metacpan.org/author/BARBIE|Barbie>,
+L<https://metacpan.org/author/ANDK|Andreas Koenig>
+and L<https://metacpan.org/author/MIYAGAWA|Tatsuhiko Miyagawa>.
 
 All bugs and mistakes are my own.
 
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2012, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
+Copyright (c) 2012-, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
+
+Parts of the internals in this distribution were refactored from
+CPAN::Reporter, Copyright (c) 2012 David Golden,
+and from CPAN::Version, Copyright (c) 2012 Andreas Koenig.
+
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself. See L<perlartistic>.
