@@ -53,11 +53,6 @@ sub _init {
     if ( $params{author} ) {
         $self->author( $params{author} );
     }
-    else {
-        # no author provided, let's try to use
-        # the PAUSE id of the resource
-        $self->author( $self->resource->metadata->{cpan_id} || 'author' );
-    }
 
     $self->via( exists $params{via}
                 ? $params{via}
@@ -121,24 +116,16 @@ sub resource {
     my ($self, $resource) = @_;
 
     if ($resource) {
-        $self->{_resource} = ref $resource and ref $resource eq 'Metabase::Resource'
+        $self->{_resource} = (ref $resource and ref $resource eq 'Metabase::Resource')
                            ? $resource
                            : Metabase::Resource->new( $resource )
                            ;
+
+        # set PAUSE id as default author name
+        $self->author( $self->resource->metadata->{cpan_id} || 'author' );
     }
 
     return $self->{_resource};
-}
-
-sub report {
-    my ($self, $report) = @_;
-    if ($report) {
-        Carp::croak 'report must be a CPAN::Testers::Report object'
-            unless ref $report and ref $report eq 'CPAN::Testers::Report';
-
-        $self->{_report} = $report;
-    }
-    return $self->{_report};
 }
 
 
@@ -714,6 +701,50 @@ Although the recommended is to construct your object passing as much information
 
 =head1 DESCRIPTION
 
+=head2 Constructor
+
+=over 4
+
+=item * new - See the SYNOPSIS
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item * author - the distribution's author. Defaults to the PAUSE id
+
+=item * comments - tester's comments. Defaults to 'none provided' (but see L</AUTOMATED_TESTING> below)
+
+=item * distname - distribution name. Defaults to what the resource contains
+
+=item * grade - 'pass', 'fail', 'na', 'unknown'. B<Required>.
+
+=item * via - sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to "Your friendly CPAN Testers client"
+
+=item * resource - either a Metabase::Resource object or a resource string
+
+=back
+
+=head2 Methods
+
+=head3 populate()
+
+Will populate the object with information for each Metabase fact, and to create the CPAN Testers email.
+
+Returns a data structure containing all metabase facts data.
+
+=head3 email()
+
+Returns a string to be used as body of the email to CPAN Testers.
+
+This method B<will> call C<populate()> if populate hasn't been called yet.
+
+=head3 metabase_data()
+
+Returns the already populated metabase data structure. Note that this will B<NOT> call C<populate()>
+so you will get undef or cached data unless you call C<populate()> yourself.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
