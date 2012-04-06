@@ -7,6 +7,9 @@ use Devel::Platform::Info;
 use Probe::Perl;
 use Config::Perl::V;
 use Carp ();
+use File::Spec;
+use Capture::Tiny qw(capture);
+
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
 our $VERSION = '0.01';
@@ -266,9 +269,6 @@ sub _populate_testercomment {
     return $self->comments;
 }
 
-# TODO: this is different than what's currently being done
-# in CPAN::Reporter::_version_finder().
-####
 sub _populate_installedmodules {
     my $self = shift;
 
@@ -295,7 +295,12 @@ sub _populate_installedmodules {
         version
     );
 
-    return _version_finder( map { $_ => 0 } @toolchain_mods );
+    my $results = _version_finder( map { $_ => 0 } @toolchain_mods );
+
+    my %toolchain = map { $_ => $results->{$_}{have} } @toolchain_mods;
+    my %prereqs = ();
+
+    return { prereqs => \%prereqs, toolchain => \%toolchain };
 }
 
 sub _format_vars_report {
