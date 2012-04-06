@@ -29,6 +29,18 @@ sub new {
     Carp::croak 'Please specify a grade for the resource' unless $params{grade};
     $self->grade( $params{grade} );
 
+    if ( $params{distname} ) {
+        $self->distname( $params{distname} );
+    }
+    else {
+        # no distname provided, let's try
+        # to figure out from the resource
+        $self->{_distname} = File::Basename::basename(
+            $params{resource},
+            qr/\.(?:tar\.(bz2|gz|Z)|t(?:gz|bz)|zip)/
+        );
+    }
+
     if ( $params{author} ) {
         $self->author( $params{author} );
     }
@@ -88,16 +100,6 @@ sub author {
 sub distname {
     my ($self, $distname) = @_;
     $self->{_distname} = $distname if $distname;
-
-    # no distname provided, let's try
-    # to figure out from the resource
-    if ( !$self->{_distname} ) {
-        my $dist = $self->resource;
-        $self->{_distname} = File::Basename::basename(
-            $dist,
-            qr/\.(?:tar\.(bz2|gz|Z)|t(?:gz|bz)|zip)/
-        );
-    }
 
     return $self->{_distname};
 }
