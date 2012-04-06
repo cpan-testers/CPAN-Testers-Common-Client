@@ -301,7 +301,7 @@ sub _populate_platforminfo {
 
 sub _populate_perlconfig {
     my $self = shift;
-    return @{ $self->{_config} }{build,config};
+    return @{ $self->{_config} }{qw(build config)};
 }
 
 sub _populate_testenvironment {
@@ -568,7 +568,7 @@ sub _get_prereqs {
         }
     }
 
-    if ($meta and $meta->{meta-spec}{version} < 2) {
+    if ($meta and $meta->{'meta-spec'}{version} < 2) {
         $self->{_meta}{prereqs} = $meta->{prereqs};
     }
     return;
