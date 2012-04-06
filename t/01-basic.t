@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use CPAN::Testers::Common::Client;
 
 my $resource = 'cpan:///distfile/RJBS/CPAN-Metabase-Fact-0.001.tar.gz';
 
