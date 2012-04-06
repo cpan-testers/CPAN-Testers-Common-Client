@@ -24,9 +24,17 @@ sub new {
     my $self  = bless {}, $class;
 
     Carp::croak 'Please specify a resource' unless %params and $params{resource};
-    $self->resource( $params{resource} );
-
     Carp::croak 'Please specify a grade for the resource' unless $params{grade};
+
+    $self->_init( %params );
+
+    return $self;
+}
+
+sub _init {
+    my ($self, %params) = @_;
+
+    $self->resource( $params{resource} );
     $self->grade( $params{grade} );
 
     if ( $params{distname} ) {
@@ -71,7 +79,7 @@ sub new {
         $self->_get_prereqs( $params{build_dir} );
     }
 
-    return $self;
+    return;
 }
 
 
