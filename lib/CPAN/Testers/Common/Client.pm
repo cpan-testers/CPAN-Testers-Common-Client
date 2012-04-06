@@ -332,6 +332,29 @@ sub _populate_testoutput {
 
 
 #--------------------------------------------------------------------------#
+# _temp_filename -- stand-in for File::Temp for backwards compatibility
+#
+# takes an optional prefix, adds 8 random chars and returns
+# an absolute pathname
+#
+# NOTE -- manual unlink required
+#--------------------------------------------------------------------------#
+
+sub _temp_filename {
+    my ($prefix) = @_;
+    # @CHARS from File::Temp
+    my @CHARS = (qw/ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+                 a b c d e f g h i j k l m n o p q r s t u v w x y z
+                 0 1 2 3 4 5 6 7 8 9 _
+             /);
+
+    $prefix = q{} unless defined $prefix;
+    $prefix .= $CHARS[ int( rand(@CHARS) ) ] for 0 .. 7;
+    return File::Spec->catfile(File::Spec->tmpdir(), $prefix);
+}
+
+
+#--------------------------------------------------------------------------#
 # _version_finder
 #
 # module => version pairs
