@@ -10,6 +10,7 @@ use Carp ();
 use File::Spec;
 use Capture::Tiny qw(capture);
 use Metabase::Resource;
+use CPAN::Testers::Common::Client::PrereqCheck;
 
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
@@ -44,7 +45,7 @@ sub _init {
     else {
         # no distname provided, let's try
         # to figure out from the resource
-        $self->{_distname} = File::Basename::basename(
+        $self->{_distname} = File::Basename::fileparse(
             $params{resource},
             qr/\.(?:tar\.(bz2|gz|Z)|t(?:gz|bz)|zip)/
         );
@@ -136,9 +137,8 @@ sub resource {
 
 sub populate {
     my $self = shift;
-    my $report = $self->report;
     Carp::croak 'please specify a resource before populating'
-        unless $report;
+        unless $self->resource;
 
     # some data is repeated between facts, so we keep a 'cache'
     $self->{_config}   = Config::Perl::V::myconfig();
@@ -148,135 +148,28 @@ sub populate {
         TestSummary TestOutput TesterComment
         Prereqs InstalledModules
         PlatformInfo PerlConfig TestEnvironment
+        LegacyReport
     );
 
     foreach my $fact ( @facts ) {
         my $populator = '_populate_' . lc $fact;
-        $self->{_data}{$fact} = $self->$populator->();
+        $self->{_data}{$fact} = $self->$populator;
     }
 
-    # this has to be last, as it also composes the email
-    $self->{_data}{LegacyReport} = $self->_populate_legacyreport;
+    # FIXME?
+    # this is a missing part of LegacyReport. It has to be set last,
+    # since it needs the rest of the data to compose the email report.
+    $self->{_data}{LegacyReport}{textreport} = $self->_create_email;
 }
 
 sub metabase_data { return shift->{_data} }
 
 sub email {
     my $self = shift;
-
-    my %intro_para = (
-    'pass' => <<'HERE',
-Thank you for uploading your work to CPAN.  Congratulations!
-All tests were successful.
-HERE
-
-    'fail' => <<'HERE',
-Thank you for uploading your work to CPAN.  However, there was a problem
-testing your distribution.
-
-If you think this report is invalid, please consult the CPAN Testers Wiki
-for suggestions on how to avoid getting FAIL reports for missing library
-or binary dependencies, unsupported operating systems, and so on:
-
-http://wiki.cpantesters.org/wiki/CPANAuthorNotes
-HERE
-
-    'unknown' => <<'HERE',
-Thank you for uploading your work to CPAN.  However, attempting to
-test your distribution gave an inconclusive result.
-
-This could be because your distribution had an error during the make/build
-stage, did not define tests, tests could not be found, because your tests were
-interrupted before they finished, or because the results of the tests could not
-be parsed.  You may wish to consult the CPAN Testers Wiki:
-
-http://wiki.cpantesters.org/wiki/CPANAuthorNotes
-HERE
-
-    'na' => <<'HERE',
-Thank you for uploading your work to CPAN.  While attempting to build or test
-this distribution, the distribution signaled that support is not available
-either for this operating system or this version of Perl.  Nevertheless, any
-diagnostic output produced is provided below for reference.  If this is not
-what you expect, you may wish to consult the CPAN Testers Wiki:
-
-http://wiki.cpantesters.org/wiki/CPANAuthorNotes
-HERE
-
-);
-
     my $metabase_data = $self->metabase_data || $self->populate;
-    my %data = (
-        author            => $self->author,
-        dist_name         => $self->distname,
-        perl_version      => $metabase_data->{TestSummary}{perl_version},
-        via               => $self->via,
-        grade             => $self->grade,
-        comment           => $self->comments,
-        test_log          => $metabase_data->{TestOutput}{test},
-        prereq_pm         => _format_prereq_report( $metabase_data->{Prereqs} ),
-        env_vars          => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
-        special_vars      => _format_vars_report( $metabase_data->{TestEnvironment}{special_vars} ),
-        toolchain_version => _format_toolchain_report( $metabase_data->{InstalledModules}{toolchain} ),
-    );
 
-    if ( length $data{test_log} > MAX_OUTPUT_LENGTH ) {
-        my $max_k = int(MAX_OUTPUT_LENGTH/1000) . "K";
-        $data{test_log} = substr( $data{test_log}, 0, MAX_OUTPUT_LENGTH)
-                        . "\n\n[Output truncated after $max_k]\n\n";
-    }
-
-    return <<"EOEMAIL";
-Dear $data{author},
-
-This is a computer-generated report for $data{dist_name}
-on perl $data{perl_version}, created by $data{via}.
-
-$intro_para{ $data{grade} }
-Sections of this report:
-
-    * Tester comments
-    * Program output
-    * Prerequisites
-    * Environment and other context
-
-------------------------------
-TESTER COMMENTS
-------------------------------
-
-Additional comments from tester:
-
-$data{comment}
-
-------------------------------
-PROGRAM OUTPUT
-------------------------------
-
-$data{test_log}
-------------------------------
-PREREQUISITES
-------------------------------
-
-Prerequisite modules loaded:
-
-$data{prereq_pm}
-------------------------------
-ENVIRONMENT AND OTHER CONTEXT
-------------------------------
-
-Environment variables:
-
-$data{env_vars}
-Perl special variables (and OS-specific diagnostics, for MSWin32):
-
-$data{special_vars}
-Perl module toolchain versions installed:
-
-$data{toolchain_versions}
-EOEMAIL
-
+    return $metabase_data->{LegacyReport}{textreport};
 }
-
 
 
 #===================================================
@@ -306,12 +199,20 @@ sub _populate_testenvironment {
 
 sub _populate_prereqs {
     my $self = shift;
-    
-    return {
-        configure_requires => $self->{_meta}{configure_requires},
-        build_requires     => $self->{_meta}{build_requires},
-        requires           => $self->{_meta}{requires},
-    };
+   
+    # TODO: update Fact::Prereqs to use the new meta::spec for prereqs 
+    # TODO: add the 'test' prereqs?
+    return $self->{_meta}{prereqs}
+        || {
+              runtime   => { requires => {} },
+              build     => { requires => {} },
+              configure => { requires => {} },
+           };
+    #{
+    #    configure_requires => $self->{_meta}{configure_requires} || {},
+    #    build_requires     => $self->{_meta}{build_requires}     || {},
+    #    requires           => $self->{_meta}{requires}           || {},
+    #};
 }
 
 sub _populate_testercomment {
@@ -346,7 +247,7 @@ sub _populate_installedmodules {
     );
 
     my $results = _version_finder( map { $_ => 0 } @toolchain_mods );
-
+use DDP; p $results;
     my %toolchain = map { $_ => $results->{$_}{have} } @toolchain_mods;
     my %prereqs = ();
 
@@ -360,8 +261,8 @@ sub _populate_legacyreport {
         unless $self->grade;
 
     return {
-        %{ $self->TestSummary },
-        textreport => $self->textreport
+        %{ $self->_populate_testsummary },
+        textreport => $self->_create_email,
     }
 }
 
@@ -405,10 +306,9 @@ sub _format_vars_report {
 
 sub _format_toolchain_report {
     my $installed = shift;
-
     my $mod_width = _max_length( keys %$installed );
     my $ver_width = _max_length(
-        map { $installed->{$_}{have} } keys %$installed
+        map { $installed->{$_} } keys %$installed
     );
 
     my $format = "    \%-${mod_width}s \%-${ver_width}s\n";
@@ -419,7 +319,7 @@ sub _format_toolchain_report {
 
     for my $var ( sort keys %$installed ) {
         $report .= sprintf("    \%-${mod_width}s \%-${ver_width}s\n",
-                            $var, $installed->{$var}{have} );
+                            $var, $installed->{$var} );
     }
 
     return $report;
@@ -624,11 +524,10 @@ sub _version_finder {
     my $prereq_input = _temp_filename( 'CTCC-' );
     open my $fh, '>', $prereq_input
         or die "Could not create temporary '$prereq_input' for prereq analysis: $!";
-    print( $fh, map { "$_ $prereqs{$_}\n" } keys %prereqs );
+    print {$fh} map { "$_ $prereqs{$_}\n" } keys %prereqs;
     close $fh;
- 
+
     my $prereq_result = capture { system( $perl, $version_finder, '<', $prereq_input ) };
- 
     unlink $prereq_input;
  
     my %result;
@@ -645,6 +544,122 @@ sub _version_finder {
     return \%result;
 }
 
+
+sub _create_email {
+    my $self = shift;
+
+    my %intro_para = (
+    'pass' => <<'HERE',
+Thank you for uploading your work to CPAN.  Congratulations!
+All tests were successful.
+HERE
+
+    'fail' => <<'HERE',
+Thank you for uploading your work to CPAN.  However, there was a problem
+testing your distribution.
+
+If you think this report is invalid, please consult the CPAN Testers Wiki
+for suggestions on how to avoid getting FAIL reports for missing library
+or binary dependencies, unsupported operating systems, and so on:
+
+http://wiki.cpantesters.org/wiki/CPANAuthorNotes
+HERE
+
+    'unknown' => <<'HERE',
+Thank you for uploading your work to CPAN.  However, attempting to
+test your distribution gave an inconclusive result.
+
+This could be because your distribution had an error during the make/build
+stage, did not define tests, tests could not be found, because your tests were
+interrupted before they finished, or because the results of the tests could not
+be parsed.  You may wish to consult the CPAN Testers Wiki:
+
+http://wiki.cpantesters.org/wiki/CPANAuthorNotes
+HERE
+
+    'na' => <<'HERE',
+Thank you for uploading your work to CPAN.  While attempting to build or test
+this distribution, the distribution signaled that support is not available
+either for this operating system or this version of Perl.  Nevertheless, any
+diagnostic output produced is provided below for reference.  If this is not
+what you expect, you may wish to consult the CPAN Testers Wiki:
+
+http://wiki.cpantesters.org/wiki/CPANAuthorNotes
+HERE
+
+);
+
+    my $metabase_data = $self->metabase_data;
+    my %data = (
+        author            => $self->author,
+        dist_name         => $self->distname,
+        perl_version      => $metabase_data->{TestSummary}{perl_version},
+        via               => $self->via,
+        grade             => $self->grade,
+        comment           => $self->comments,
+        test_log          => $metabase_data->{TestOutput}{test},
+        prereq_pm         => _format_prereq_report( $metabase_data->{Prereqs} ),
+        env_vars          => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
+        special_vars      => _format_vars_report( $metabase_data->{TestEnvironment}{special_vars} ),
+        toolchain_version => _format_toolchain_report( $metabase_data->{InstalledModules}{toolchain} ),
+    );
+
+    if ( length $data{test_log} > MAX_OUTPUT_LENGTH ) {
+        my $max_k = int(MAX_OUTPUT_LENGTH/1000) . "K";
+        $data{test_log} = substr( $data{test_log}, 0, MAX_OUTPUT_LENGTH)
+                        . "\n\n[Output truncated after $max_k]\n\n";
+    }
+
+    return <<"EOEMAIL";
+Dear $data{author},
+
+This is a computer-generated report for $data{dist_name}
+on perl $data{perl_version}, created by $data{via}.
+
+$intro_para{ $data{grade} }
+Sections of this report:
+
+    * Tester comments
+    * Program output
+    * Prerequisites
+    * Environment and other context
+
+------------------------------
+TESTER COMMENTS
+------------------------------
+
+Additional comments from tester:
+
+$data{comment}
+
+------------------------------
+PROGRAM OUTPUT
+------------------------------
+
+$data{test_log}
+------------------------------
+PREREQUISITES
+------------------------------
+
+Prerequisite modules loaded:
+
+$data{prereq_pm}
+------------------------------
+ENVIRONMENT AND OTHER CONTEXT
+------------------------------
+
+Environment variables:
+
+$data{env_vars}
+Perl special variables (and OS-specific diagnostics, for MSWin32):
+
+$data{special_vars}
+Perl module toolchain versions installed:
+
+$data{toolchain_versions}
+EOEMAIL
+
+}
 
 42;
 __END__
