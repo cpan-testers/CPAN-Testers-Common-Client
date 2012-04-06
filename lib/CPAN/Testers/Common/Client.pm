@@ -298,6 +298,49 @@ sub _populate_installedmodules {
     return _version_finder( map { $_ => 0 } @toolchain_mods );
 }
 
+sub _format_vars_report {
+    my $variables = shift;
+
+    my $report = "";
+    foreach my $var ( sort keys %$variables ) {
+        my $value = $variables->{$var};
+        $value = '[undef]' if ! defined $value;
+        $report .= "    $var = $value\n";
+    }
+    return $report;
+}
+
+sub _format_toolchain_report {
+    my $installed = shift;
+
+    my $mod_width = _max_length( keys %$installed );
+    my $ver_width = _max_length(
+        map { $installed->{$_}{have} } keys %$installed
+    );
+
+    my $format = "    \%-${mod_width}s \%-${ver_width}s\n";
+
+    my $report = "";
+    $report .= sprintf( $format, "Module", "Have" );
+    $report .= sprintf( $format, "-" x $mod_width, "-" x $ver_width );
+
+    for my $var ( sort keys %$installed ) {
+        $report .= sprintf("    \%-${mod_width}s \%-${ver_width}s\n",
+                            $var, $installed->{$var}{have} );
+    }
+
+    return $report;
+}
+
+sub _max_length {
+    my ($first, @rest) = @_;
+    my $max = length $first;
+    for my $term ( @rest ) {
+        $max = length $term if length $term > $max;
+    }
+    return $max;
+}
+
 sub _populate_legacyreport {
     my $self = shift;
     Carp::croak 'grade missing for LegacyReport'
@@ -518,9 +561,9 @@ HERE
         comment           => $self->comments,
         test_log          => $metabase_data->{TestOutput}{test},
         prereq_pm         => _format_prereq_report( $metabase_data->{Prereqs} ),
-        env_vars          => ,
-        special_vars      => ,
-        toolchain_version => ,
+        env_vars          => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
+        special_vars      => _format_vars_report( $metabase_data->{TestEnvironment}{special_vars} ),
+        toolchain_version => _format_toolchain_report( $metabase_data->{InstalledModules}{toolchain} ),
     );
 
     if ( length $data{test_log} > MAX_OUTPUT_LENGTH ) {
