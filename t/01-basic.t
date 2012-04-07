@@ -19,7 +19,7 @@ is $client->distname, 'CPAN-Metabase-Fact-0.001', 'got proper distname';
 
 is(
     $client->via,
-    'Your friendly CPAN Testers client version ' . $CPAN::Testers::Common::Client::VERSION,
+    'your friendly CPAN Testers client version ' . $CPAN::Testers::Common::Client::VERSION,
     'got the default "via" information'
 );
 
@@ -31,9 +31,36 @@ like(
 
 my $data;
 ok $data = $client->populate, 'could populate';
+is ref $data, 'HASH', 'got back a hash reference';
 
-#use DDP;
+my @facts = qw(
+        TestSummary TestOutput TesterComment
+        Prereqs InstalledModules
+        PlatformInfo PerlConfig TestEnvironment
+        LegacyReport
+    );
 
-#p $data;
+foreach my $fact (@facts) {
+  ok exists $data->{$fact}, "found data for '$fact' fact";
+}
+
+my $data2;
+ok $data2 = $client->metabase_data, 'got metabase_data';
+is_deeply $data, $data2, 'metabase_data() returns the same (cached) data structure';
+
+ok my $email = $client->email, 'could retrieve the email';
+
+ok length $email, 'email is not empty';
+
+foreach my $section ( 'TESTER COMMENTS', 'PROGRAM OUTPUT',
+                      'PREREQUISITES', 'ENVIRONMENT AND OTHER CONTEXT'
+) {
+    like $email, qr/$section/, "standard email section $section is shown";
+}
+
+$client = CPAN::Testers::Common::Client->new(
+    resource => $resource,
+    grade    => 'pass',
+);
 
 done_testing;
