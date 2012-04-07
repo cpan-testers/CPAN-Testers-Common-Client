@@ -57,7 +57,7 @@ sub _init {
 
     $self->via( exists $params{via}
                 ? $params{via}
-                : "Your friendly CPAN Testers client version $VERSION"
+                : "your friendly CPAN Testers client version $VERSION"
               );
 
     $self->comments( exists $params{comments}
@@ -144,6 +144,8 @@ sub populate {
     $self->{_config}   = Config::Perl::V::myconfig();
     $self->{_platform} = Devel::Platform::Info->new->get_info();
 
+    # LegacyReport creates the email, therefore it must
+    # be set last so all other data is already in place.
     my @facts = qw(
         TestSummary TestOutput TesterComment
         Prereqs InstalledModules
@@ -156,10 +158,7 @@ sub populate {
         $self->{_data}{$fact} = $self->$populator;
     }
 
-    # FIXME?
-    # this is a missing part of LegacyReport. It has to be set last,
-    # since it needs the rest of the data to compose the email report.
-    $self->{_data}{LegacyReport}{textreport} = $self->_create_email;
+    return $self->metabase_data;
 }
 
 sub metabase_data { return shift->{_data} }
@@ -247,7 +246,7 @@ sub _populate_installedmodules {
     );
 
     my $results = _version_finder( map { $_ => 0 } @toolchain_mods );
-use DDP; p $results;
+
     my %toolchain = map { $_ => $results->{$_}{have} } @toolchain_mods;
     my %prereqs = ();
 
@@ -257,9 +256,6 @@ use DDP; p $results;
 
 sub _populate_legacyreport {
     my $self = shift;
-    Carp::croak 'grade missing for LegacyReport'
-        unless $self->grade;
-
     return {
         %{ $self->_populate_testsummary },
         textreport => $self->_create_email,
@@ -274,7 +270,7 @@ sub _populate_testsummary {
         osname       => $self->{_platform}{osname},
         osversion    => $self->{_platform}{osvers},
         archname     => $self->{_platform}{archname},
-        perl_version => $self->{_config}{version},
+        perl_version => $self->{_config}{config}{version},
     }
 }
 
@@ -325,7 +321,6 @@ sub _format_toolchain_report {
     return $report;
 }
 
-
 sub _format_prereq_report {
     my $prereqs = shift;
     my (%have, %prereq_met, $report);
@@ -335,7 +330,7 @@ sub _format_prereq_report {
     # see what prereqs are satisfied in subprocess
     foreach my $section ( @prereq_sections ) {
         my $requires = $prereqs->{$section}{requires};
-        next unless $requires and ref $requires eq 'HASH';
+        next unless $requires and ref $requires eq 'HASH' and keys %$requires > 0;
 
         my $results = _version_finder( %$requires );
 
@@ -529,13 +524,13 @@ sub _version_finder {
 
     my $prereq_result = capture { system( $perl, $version_finder, '<', $prereq_input ) };
     unlink $prereq_input;
- 
+
     my %result;
     for my $line ( split "\n", $prereq_result ) {
         next unless length $line;
         my ($mod, $met, $have) = split " ", $line;
         unless ( defined($mod) && defined($met) && defined($have) ) {
-            warn "Error parsing output from CPAN::Reporter::PrereqCheck:\n$line";
+            warn "Error parsing output from CPAN::Testers::Common::Client::PrereqCheck:\n$line";
             next;
         }
         $result{$mod}{have} = $have;
@@ -591,17 +586,17 @@ HERE
 
     my $metabase_data = $self->metabase_data;
     my %data = (
-        author            => $self->author,
-        dist_name         => $self->distname,
-        perl_version      => $metabase_data->{TestSummary}{perl_version},
-        via               => $self->via,
-        grade             => $self->grade,
-        comment           => $self->comments,
-        test_log          => $metabase_data->{TestOutput}{test},
-        prereq_pm         => _format_prereq_report( $metabase_data->{Prereqs} ),
-        env_vars          => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
-        special_vars      => _format_vars_report( $metabase_data->{TestEnvironment}{special_vars} ),
-        toolchain_version => _format_toolchain_report( $metabase_data->{InstalledModules}{toolchain} ),
+        author             => $self->author,
+        dist_name          => $self->distname,
+        perl_version       => $metabase_data->{TestSummary}{perl_version},
+        via                => $self->via,
+        grade              => $self->grade,
+        comment            => $self->comments,
+        test_log           => $metabase_data->{TestOutput}{test} || '',
+        prereq_pm          => _format_prereq_report( $metabase_data->{Prereqs} ),
+        env_vars           => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
+        special_vars       => _format_vars_report( $metabase_data->{TestEnvironment}{special_vars} ),
+        toolchain_versions => _format_toolchain_report( $metabase_data->{InstalledModules}{toolchain} ),
     );
 
     if ( length $data{test_log} > MAX_OUTPUT_LENGTH ) {
