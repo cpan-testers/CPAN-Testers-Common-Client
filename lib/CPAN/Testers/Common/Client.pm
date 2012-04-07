@@ -74,6 +74,13 @@ sub _init {
         $self->_get_prereqs( $params{build_dir} );
     }
 
+    foreach my $output ( qw( configure build test ) ) {
+        my $key = $output . '_output';
+        if (exists $params{$key}) {
+            $self->{_output}{$output} = $params{$key};
+        }
+    }
+
     return;
 }
 
@@ -276,11 +283,7 @@ sub _populate_testsummary {
 
 sub _populate_testoutput {
     my $self = shift;
-    return {
-        configure => $self->{_build}{configure},
-        build     => $self->{_build}{build},
-        test      => $self->{_build}{test},
-    };
+    return $self->{_output};
 }
 
 
