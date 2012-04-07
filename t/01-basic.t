@@ -58,9 +58,43 @@ foreach my $section ( 'TESTER COMMENTS', 'PROGRAM OUTPUT',
     like $email, qr/$section/, "standard email section $section is shown";
 }
 
-$client = CPAN::Testers::Common::Client->new(
+
+
+#===========================================
+# second run -- passing more stuff around
+#===========================================
+
+$resource = 'cpan:///distfile/DAGOLDEN/CPAN-Reporter-0.003.tar.bz2';
+
+ok $client = CPAN::Testers::Common::Client->new(
     resource => $resource,
-    grade    => 'pass',
-);
+    author   => 'David Golden',
+    via      => 'AwesomeClient 2.0 pre-beta',
+    grade    => 'fail',
+    comments => 'oh, noes!',
+
+    configure_output => 'TUPTUO ERUGIFNOC',
+    build_output     => 'TUPTUO DLIUB',
+    test_output      => 'ZOMG THIS TEST FAILED',
+
+    prereqs => {
+       runtime   => { requires => { 'Test::More' => 0 }  },
+       build     => { requires => { 'Test::Most' => 0, 'Test::LongString' => 0 } },
+       configure => { requires => { 'Test::Builder' => 1.2 } },
+    },
+), 'could create a new object';
+
+
+ok $email = $client->email, 'got the email on the second run (auto populates)';
+
+like $email, qr/^Dear David Golden,/, 'addressing author';
+like $email, qr/created by AwesomeClient 2.0 pre-beta/, 'client label';
+like $email, qr/oh, noes!/, 'tester comments';
+like $email, qr/ZOMG THIS TEST FAILED/, 'test output';
+like $email, qr/Test::More/, 'runtime prereq';
+like $email, qr/Test::Most/, 'build prereq 1';
+like $email, qr/Test::LongString/, 'build_prereq 2';
+like $email, qr/Test::Builder/, 'configure_prereq';
+
 
 done_testing;
