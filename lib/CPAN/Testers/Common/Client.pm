@@ -116,7 +116,7 @@ sub distname {
 
 sub grade {
     my ($self, $grade) = @_;
-    $self->{_grade} = $grade if $grade;
+    $self->{_grade} = lc $grade if $grade;
     return $self->{_grade};
 }
 
@@ -684,8 +684,13 @@ Although the recommended is to construct your object passing as much information
 
     my $client = CPAN::Testers::Common::Client->new(
           resource         => 'cpan:///distfile/RJBS/Data-UUID-1.217.tar.gz',
+          author           => 'Ricardo Signes',
           grade            => 'pass',
           comments         => 'this is an auto-generated report. Cheers!',
+          via              => 'My Awesome Client App 1.0',
+
+          # you should provide at least 'test_output' to the author,
+          # otherwise he/she won't know what went wrong!
           configure_output => '...',
           build_output     => '...',
           test_output      => '...',
