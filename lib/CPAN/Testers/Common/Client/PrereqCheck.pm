@@ -170,7 +170,7 @@ sub _vlt {
 }
 
 sub _vstring {
-    my($self,$n) = @_;
+    my($n) = @_;
     $n =~ s/^v// or die "_vstring() called with invalid arg [$n]";
     pack "U*", split /\./, $n;
 }
