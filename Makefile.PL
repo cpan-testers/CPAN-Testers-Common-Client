@@ -16,6 +16,7 @@ WriteMakefile(
         'Capture::Tiny'         => 0,
         'File::Spec'            => 0,
         'Config::Perl::V'       => 0,
+        'Metabase::Resource'    => 0,
         'ExtUtils::MakeMaker'   => 6.36,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
