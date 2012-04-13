@@ -3,19 +3,24 @@ use warnings;
 use Test::More;
 use CPAN::Testers::Common::Client;
 
-my $resource = 'cpan:///distfile/RJBS/CPAN-Metabase-Fact-0.001.tar.gz';
+my $author = 'RJBS';
+my $dist   = 'CPAN-Metabase-Fact-0.001';
+my $grade  = 'pass';
 
 my $client = CPAN::Testers::Common::Client->new(
-    resource => $resource,
-    grade    => 'pass',
+    author   => $author,
+    distname => $dist,
+    grade    => $grade,
 );
 ok $client, 'client spawns';
 
 isa_ok $client, 'CPAN::Testers::Common::Client', 'client has the proper class';
 
-is $client->author, 'RJBS', 'got the proper author from resource';
+is $client->author, $author, 'got the author';
 
-is $client->distname, 'CPAN-Metabase-Fact-0.001', 'got proper distname';
+is $client->distname, $dist, 'got proper distname';
+
+is $client->grade, $grade, 'got the proper grade';
 
 is(
     $client->via,
@@ -64,13 +69,15 @@ foreach my $section ( 'TESTER COMMENTS', 'PROGRAM OUTPUT',
 # second run -- passing more stuff around
 #===========================================
 
-$resource = 'cpan:///distfile/DAGOLDEN/CPAN-Reporter-0.003.tar.bz2';
+$author = 'David Golden';
+$dist   = 'CPAN-Reporter-0.003.tar.bz2';
+$grade  = 'fail';
 
 ok $client = CPAN::Testers::Common::Client->new(
-    resource => $resource,
-    author   => 'David Golden',
+    distname => $dist,
+    author   => $author,
+    grade    => $grade,
     via      => 'AwesomeClient 2.0 pre-beta',
-    grade    => 'fail',
     comments => 'oh, noes!',
 
     configure_output => 'TUPTUO ERUGIFNOC',
