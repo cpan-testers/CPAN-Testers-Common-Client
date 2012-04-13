@@ -9,7 +9,6 @@ use Config::Perl::V;
 use Carp ();
 use File::Spec;
 use Capture::Tiny qw(capture);
-use Metabase::Resource;
 use CPAN::Testers::Common::Client::PrereqCheck;
 
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
@@ -25,8 +24,9 @@ sub new {
     my ($class, %params) = @_;
     my $self  = bless {}, $class;
 
-    Carp::croak 'Please specify a resource' unless %params and $params{resource};
-    Carp::croak 'Please specify a grade for the resource' unless $params{grade};
+    Carp::croak q[Please specify a distname]           unless $params{distname};
+    Carp::croak q[Please specify the dist's author]    unless $params{author};
+    Carp::croak q[Please specify a grade for the dist] unless $params{grade};
 
     $self->_init( %params );
 
@@ -36,24 +36,9 @@ sub new {
 sub _init {
     my ($self, %params) = @_;
 
-    $self->resource( $params{resource} );
     $self->grade( $params{grade} );
-
-    if ( $params{distname} ) {
-        $self->distname( $params{distname} );
-    }
-    else {
-        # no distname provided, let's try
-        # to figure out from the resource
-        $self->{_distname} = File::Basename::fileparse(
-            $params{resource},
-            qr/\.(?:tar\.(bz2|gz|Z)|t(?:gz|bz)|zip)/
-        );
-    }
-
-    if ( $params{author} ) {
-        $self->author( $params{author} );
-    }
+    $self->distname( $params{distname} );
+    $self->author( $params{author} );
 
     $self->via( exists $params{via}
                 ? $params{via}
@@ -120,22 +105,6 @@ sub grade {
     return $self->{_grade};
 }
 
-sub resource {
-    my ($self, $resource) = @_;
-
-    if ($resource) {
-        $self->{_resource} = (ref $resource and ref $resource eq 'Metabase::Resource')
-                           ? $resource
-                           : Metabase::Resource->new( $resource )
-                           ;
-
-        # set PAUSE id as default author name
-        $self->author( $self->resource->metadata->{cpan_id} || 'author' );
-    }
-
-    return $self->{_resource};
-}
-
 
 #====================================
 #  PUBLIC METHODS
@@ -144,8 +113,6 @@ sub resource {
 
 sub populate {
     my $self = shift;
-    Carp::croak 'please specify a resource before populating'
-        unless $self->resource;
 
     # some data is repeated between facts, so we keep a 'cache'
     $self->{_config}   = Config::Perl::V::myconfig();
@@ -674,7 +641,8 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
     use CPAN::Testers::Common::Client;
 
     my $client = CPAN::Testers::Common::Client->new(
-          resource => 'cpan:///distfile/RJBS/Data-UUID-1.217.tar.gz',
+          author   => 'RJBS',
+          distname => 'Data-UUID-1.217',
           grade    => 'pass',
     );
 
@@ -685,7 +653,7 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
 Although the recommended is to construct your object passing as much information as possible:
 
     my $client = CPAN::Testers::Common::Client->new(
-          resource         => 'cpan:///distfile/RJBS/Data-UUID-1.217.tar.gz',
+          distname         => 'Data-UUID-1.217',
           author           => 'Ricardo Signes',
           grade            => 'pass',
           comments         => 'this is an auto-generated report. Cheers!',
@@ -742,8 +710,6 @@ Although the recommended is to construct your object passing as much information
 =item * grade - 'pass', 'fail', 'na', 'unknown'. B<Required>.
 
 =item * via - sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to "Your friendly CPAN Testers client"
-
-=item * resource - either a Metabase::Resource object or a resource string
 
 =back
 
