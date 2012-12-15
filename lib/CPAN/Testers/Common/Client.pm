@@ -630,6 +630,7 @@ EOEMAIL
 
 42;
 __END__
+=encoding utf8
 
 =head1 NAME
 
@@ -780,7 +781,7 @@ Breno G. de Oliveira  C<< <garu@cpan.org> >>
 
 This module was created at the L<http://2012.qa-hackathon.org|2012 Perl QA Hackathon>, so a big
 THANK YOU is in order to all the companies and organisations that supported it, namely the
-L<http://www.cite-sciences.fr/|CitÃ© des Sciences>, L<http://www.diabolocom.com/|Diabolocom>,
+L<http://www.cite-sciences.fr/|Cité des Sciences>, L<http://www.diabolocom.com/|Diabolocom>,
 L<http://www.dijkmat.nl/|Dijkmat>, L<http://www.duckduckgo.com/|DuckDuckGo>,
 L<http://www.dyn.com/|Dyn>, L<http://freeside.biz/|Freeside>, L<http://www.hederatech.com/|Hedera>,
 L<http://www.jaguar-network.com/|Jaguar>, L<http://www.shadow.cat/|ShadowCat>,
