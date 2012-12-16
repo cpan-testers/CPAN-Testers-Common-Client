@@ -692,9 +692,8 @@ Although the recommended is to construct your object passing as much information
 
 =head2 Constructor
 
-=over 4
-
-=item * new - See the SYNOPSIS
+Calling C<new()> creates a new object. You B<must> pass a hash as argument setting at least
+I<distname>, I<author> and I<grade>. See below for their meaning.
 
 =back
 
@@ -702,13 +701,13 @@ Although the recommended is to construct your object passing as much information
 
 =over 4
 
-=item * author - the distribution's author. Defaults to the PAUSE id
+=item * author - the evaluated distribution's author. Could be a PAUSE id or a full name. B<Required>.
 
-=item * comments - tester's comments. Defaults to 'none provided' (but see L</AUTOMATED_TESTING> below)
-
-=item * distname - distribution name. Defaults to what the resource contains
+=item * distname - distribution name, in C<Dist-Name-version.suffix> format. B<Required>.
 
 =item * grade - 'pass', 'fail', 'na', 'unknown'. B<Required>.
+
+=item * comments - tester's comments. Defaults to 'none provided' (but see L</AUTOMATED_TESTING> below)
 
 =item * via - sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to "Your friendly CPAN Testers client"
 
@@ -718,7 +717,7 @@ Although the recommended is to construct your object passing as much information
 
 =head3 populate()
 
-Will populate the object with information for each Metabase fact, and to create the CPAN Testers email.
+Will populate the object with information for each Metabase fact, and create the CPAN Testers email body.
 
 Returns a data structure containing all metabase facts data.
 
