@@ -52,6 +52,8 @@ sub _init {
                      : 'none provided'
                    );
 
+    $self->command( $params{command} ) if exists $params{command};
+
     if ( $params{prereqs} ) {
         $self->{_meta}{prereqs} = $params{prereqs}
     }
@@ -105,6 +107,11 @@ sub grade {
     return $self->{_grade};
 }
 
+sub command {
+    my ($self, $command) = @_;
+    $self->{_command} = $command if $command;
+    return $self->{_command} || '';
+}
 
 #====================================
 #  PUBLIC METHODS
@@ -564,6 +571,7 @@ HERE
         via                => $self->via,
         grade              => $self->grade,
         comment            => $self->comments,
+        command            => $self->command,
         test_log           => $metabase_data->{TestOutput}{test} || '',
         prereq_pm          => _format_prereq_report( $metabase_data->{Prereqs} ),
         env_vars           => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
@@ -602,6 +610,8 @@ $data{comment}
 ------------------------------
 PROGRAM OUTPUT
 ------------------------------
+
+Output from '$data{command}':
 
 $data{test_log}
 ------------------------------
@@ -711,6 +721,8 @@ Although the recommended is to construct your object passing as much information
 =item * grade - 'pass', 'fail', 'na', 'unknown'. B<Required>.
 
 =item * via - sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to "Your friendly CPAN Testers client"
+
+=item * command - the command used to test the distribution.
 
 =back
 
