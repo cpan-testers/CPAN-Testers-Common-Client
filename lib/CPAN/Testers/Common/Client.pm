@@ -630,6 +630,7 @@ EOEMAIL
 
 42;
 __END__
+=encoding utf8
 
 =head1 NAME
 
@@ -757,9 +758,15 @@ L<https://github.com/garu/CPAN-Testers-Common-Client>
 
 =over 4
 
-=item C<< Error message here, perhaps with %s placeholders >>
+=item C<< Could not create temporary '$FILE' for prereq analysis: $DESCRIPTION >>
 
-[Description of error here]
+In order to analyse a distribution's pre-requirements, we must create a temporary
+file C<$FILE>. The C<$DESCRIPTION> should contain the error found.
+
+=item C<< Error parsing output from CPAN::Testers::Common::Client::PrereqCheck: $LINE >>
+
+While parsing the pre-requirements result, the given C<$LINE> couldn't be processed
+correctly. Please report the issue, patches will be welcome.
 
 =back
 
