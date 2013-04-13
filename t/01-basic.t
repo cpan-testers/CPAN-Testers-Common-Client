@@ -22,6 +22,8 @@ is $client->distname, $dist, 'got proper distname';
 
 is $client->grade, $grade, 'got the proper grade';
 
+is $client->command, '', 'got the proper command';
+
 is(
     $client->via,
     'your friendly CPAN Testers client version ' . $CPAN::Testers::Common::Client::VERSION,
@@ -79,6 +81,7 @@ ok $client = CPAN::Testers::Common::Client->new(
     grade    => $grade,
     via      => 'AwesomeClient 2.0 pre-beta',
     comments => 'oh, noes!',
+    command  => '/compile/and/test/me/please',
 
     configure_output => 'TUPTUO ERUGIFNOC',
     build_output     => 'TUPTUO DLIUB',
@@ -102,6 +105,7 @@ like $email, qr/Test::More/, 'runtime prereq';
 like $email, qr/Test::Most/, 'build prereq 1';
 like $email, qr/Test::LongString/, 'build_prereq 2';
 like $email, qr/Test::Builder/, 'configure_prereq';
+like $email, qr|Output from '/compile/and/test/me/please':|, 'command';
 
 
 done_testing;
