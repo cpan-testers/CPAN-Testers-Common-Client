@@ -21,7 +21,7 @@ WriteMakefile(
         # C:T:C:C:Config also relies on:
         'File::HomeDir' => 0.58,
         'File::Path'    => 0,
-        'IPC::Cmd       => 0,
+        'IPC::Cmd'      => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CPAN-Testers-Common-Client-*' },
