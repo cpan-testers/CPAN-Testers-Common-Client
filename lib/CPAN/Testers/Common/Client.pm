@@ -701,6 +701,16 @@ information as possible:
 
 =head1 DESCRIPTION
 
+This module provides a common client for constructing metabase facts and
+the legacy email message sent to CPAN Testers in a way that is properly
+parsed by the extraction and report tools. It is meant to be used by all
+the CPAN clients (and standalone tools) that want/need to support the
+CPAN Testers infrastructure.
+
+If you need to parse or write to the common CPAN Testers configuration file,
+please refer to the B<highly experimental>
+L<CPAN::Testers::Common::Client::Config>.
+
 =head2 Constructor
 
 =over 4
@@ -819,7 +829,7 @@ All bugs and mistakes are my own.
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2012-, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
+Copyright (c) 2012-2013, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
 
 Parts of the internals in this distribution were refactored from
 CPAN::Reporter, Copyright (c) 2012 David Golden,
