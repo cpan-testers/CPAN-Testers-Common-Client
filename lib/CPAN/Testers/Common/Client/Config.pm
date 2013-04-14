@@ -3,7 +3,6 @@ use strict;
 use warnings;
 
 use Carp               ();
-use Config::Tiny  2.08 ();
 use File::Spec    3.19 ();
 use File::HomeDir 0.58 ();
 use File::Path    qw( mkpath );
@@ -433,13 +432,14 @@ __END__
 
 =head1 NAME
 
-CPAN::Testers::Common::Client::Config - auxiliary functions for setting up CPAN Testers clients
+CPAN::Testers::Common::Client::Config - auxiliary functions for setting up
+CPAN Testers clients
 
 =head1 WARNING!!!
 
-This is a *very* early module and the API B<WILL CHANGE>. We're still
-moving stuff around, so please only use it if you understand and
-accept the consequences.
+This is a *very* early module and an EXPERIMENTAL one for that matter.
+The API B<WILL CHANGE>. We're still moving stuff around, so please only
+use it if you understand and accept the consequences.
 
 If you have any questions, please contact the author.
 
