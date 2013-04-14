@@ -428,18 +428,20 @@ sub _validate_skipfile {
 }
 
 
-
-#TODO: turn this into an object
-#TODO: get a mywarn => \&func and a myprompt => \&
-#TODO: export the remaining validators from CPAN::Reporter::Config
-
-
 1;
 __END__
 
 =head1 NAME
 
 CPAN::Testers::Common::Client::Config - auxiliary functions for setting up CPAN Testers clients
+
+=head1 WARNING!!!
+
+This is a *very* early module and the API B<WILL CHANGE>. We're still
+moving stuff around, so please only use it if you understand and
+accept the consequences.
+
+If you have any questions, please contact the author.
 
 =head1 FUNCTIONS
 
