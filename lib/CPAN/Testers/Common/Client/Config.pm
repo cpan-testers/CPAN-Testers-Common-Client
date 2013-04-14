@@ -10,8 +10,7 @@ use File::Path    qw( mkpath );
 use IPC::Cmd;
 
 sub new {
-    my ($class, %args) = shift;
-
+    my ($class, %args) = @_;
     my $prompt_ref = _set_prompt($args{myprompt});
     my $warn_ref   = _set_warn($args{mywarn});
 
@@ -131,11 +130,13 @@ HERE
     );
 
     return bless {
-        _warn   => $mywarn,
-        _prompt => $myprompt,
+        _warn   => $warn_ref,
+        _prompt => $prompt_ref,
         _specs  => \%option_specs,
     }, $class;
 }
+
+sub config_spec { return $_[0]->{_spec} }
 
 sub myprompt { return $_[0]->{_prompt} }
 sub mywarn   { return $_[0]->{_warn}   }
@@ -191,7 +192,6 @@ sub get_config_filename {
     }
 }
 
-sub config_spec { return $_[0]->{_spec} }
 
 sub generate_profile {
     my ($self, $id_file, $config) = @_;
@@ -266,8 +266,9 @@ sub is_valid_grade {
 
 sub _validate {
     my ($self, $name, $value) = @_;
-    return 1 if ! exists $option_specs{$name}{validate};
-    return $option_specs{$name}{validate}->($name, $value);
+    my $specs = $self->config_spec;
+    return 1 if ! exists $specs->{$name}{validate};
+    return $specs->{$name}{validate}->($self, $name, $value);
 }
 
 #--------------------------------------------------------------------------#
@@ -316,7 +317,7 @@ sub _validate_grade_action_pair {
         my %grades = map { ($_,1) } split( "/", $grade_list);
         for my $g ( keys %grades ) {
             if ( ! _is_valid_grade($g) ) {
-                $self->->mywarn(
+                $self->mywarn(
                     "\nignoring invalid grade '$g' in '$grade_action' for '$name'.\n\n"
                 );
                 delete $grades{$g};
