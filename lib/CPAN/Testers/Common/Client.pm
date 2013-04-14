@@ -661,7 +661,8 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
     my $metabase_data = $client->populate;
     my $email_body    = $client->email;
 
-Although the recommended is to construct your object passing as much information as possible:
+Although the recommended way is to construct your object passing as much
+information as possible:
 
     my $client = CPAN::Testers::Common::Client->new(
           distname         => 'Data-UUID-1.217',
