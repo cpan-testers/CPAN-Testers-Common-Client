@@ -1,5 +1,8 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.02  2013-04-16
+      - added files that were missing from MANIFEST
+
 0.01  2013-04-15
-      Initial release.
+      - Initial release.
 
