@@ -13,7 +13,7 @@ use CPAN::Testers::Common::Client::PrereqCheck;
 
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 #==================================
@@ -51,6 +51,8 @@ sub _init {
                      ? "this report is from an automated smoke testing program\nand was not reviewed by a human for accuracy"
                      : 'none provided'
                    );
+
+    $self->command( $params{command} ) if exists $params{command};
 
     if ( $params{prereqs} ) {
         $self->{_meta}{prereqs} = $params{prereqs}
@@ -105,6 +107,11 @@ sub grade {
     return $self->{_grade};
 }
 
+sub command {
+    my ($self, $command) = @_;
+    $self->{_command} = $command if $command;
+    return $self->{_command} || '';
+}
 
 #====================================
 #  PUBLIC METHODS
@@ -564,6 +571,7 @@ HERE
         via                => $self->via,
         grade              => $self->grade,
         comment            => $self->comments,
+        command            => $self->command,
         test_log           => $metabase_data->{TestOutput}{test} || '',
         prereq_pm          => _format_prereq_report( $metabase_data->{Prereqs} ),
         env_vars           => _format_vars_report( $metabase_data->{TestEnvironment}{environment_vars} ),
@@ -602,6 +610,8 @@ $data{comment}
 ------------------------------
 PROGRAM OUTPUT
 ------------------------------
+
+Output from '$data{command}':
 
 $data{test_log}
 ------------------------------
@@ -651,7 +661,8 @@ CPAN::Testers::Common::Client - Common class for CPAN::Testers clients
     my $metabase_data = $client->populate;
     my $email_body    = $client->email;
 
-Although the recommended is to construct your object passing as much information as possible:
+Although the recommended way is to construct your object passing as much
+information as possible:
 
     my $client = CPAN::Testers::Common::Client->new(
           distname         => 'Data-UUID-1.217',
@@ -690,6 +701,16 @@ Although the recommended is to construct your object passing as much information
 
 =head1 DESCRIPTION
 
+This module provides a common client for constructing metabase facts and
+the legacy email message sent to CPAN Testers in a way that is properly
+parsed by the extraction and report tools. It is meant to be used by all
+the CPAN clients (and standalone tools) that want/need to support the
+CPAN Testers infrastructure.
+
+If you need to parse or write to the common CPAN Testers configuration file,
+please refer to the B<highly experimental>
+L<CPAN::Testers::Common::Client::Config>.
+
 =head2 Constructor
 
 Calling C<new()> creates a new object. You B<must> pass a hash as argument setting at least
@@ -710,6 +731,8 @@ I<distname>, I<author> and I<grade>. See below for their meaning.
 =item * comments - tester's comments. Defaults to 'none provided' (but see L</AUTOMATED_TESTING> below)
 
 =item * via - sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to "Your friendly CPAN Testers client"
+
+=item * command - the command used to test the distribution.
 
 =back
 
@@ -757,9 +780,15 @@ L<https://github.com/garu/CPAN-Testers-Common-Client>
 
 =over 4
 
-=item C<< Error message here, perhaps with %s placeholders >>
+=item C<< Could not create temporary '$FILE' for prereq analysis: $DESCRIPTION >>
 
-[Description of error here]
+In order to analyse a distribution's pre-requirements, we must create a temporary
+file C<$FILE>. The C<$DESCRIPTION> should contain the error found.
+
+=item C<< Error parsing output from CPAN::Testers::Common::Client::PrereqCheck: $LINE >>
+
+While parsing the pre-requirements result, the given C<$LINE> couldn't be processed
+correctly. Please report the issue, patches will be welcome.
 
 =back
 
@@ -799,7 +828,7 @@ All bugs and mistakes are my own.
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2012-, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
+Copyright (c) 2012-2013, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
 
 Parts of the internals in this distribution were refactored from
 CPAN::Reporter, Copyright (c) 2012 David Golden,
