@@ -94,6 +94,10 @@ sub author {
     return $self->{_author};
 }
 
+
+#FIXME? the distname in CPAN::Reporter is validated
+# under a specific regex in line 368. We should
+# move that logic here.
 sub distname {
     my ($self, $distname) = @_;
     $self->{_distname} = $distname if $distname;
@@ -372,6 +376,7 @@ sub _get_env_vars {
         /PERL/
         /LC_/
         /AUTHOR_TEST/
+        /RELEASE_TEST/
         LANG
         LANGUAGE
         PATH
@@ -381,6 +386,8 @@ sub _get_env_vars {
         TEMP
         TMPDIR
         AUTOMATED_TESTING
+        NON_INTERACTIVE
+        EXTENDED_TESTING
         INCLUDE
         LIB
         LD_LIBRARY_PATH
