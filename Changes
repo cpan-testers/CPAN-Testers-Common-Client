@@ -1,5 +1,10 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.03  2013-04-18
+      - code to normalize Metabase's id_file.
+      - adding extra variables according to the
+        Lancaster Consensus.
+
 0.02  2013-04-16
       - added files that were missing from MANIFEST
 
