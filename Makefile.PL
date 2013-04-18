@@ -14,6 +14,7 @@ WriteMakefile(
         'Config::Perl::V'       => 0,
         'Devel::Platform::Info' => 0,
         'ExtUtils::MakeMaker'   => 6.36,
+        'File::Glob'            => 0,
         'File::Spec'            => 0,
         'Probe::Perl'           => 0,
         'Test::More'            => 0,

@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Carp               ();
+use File::Glob         ();
 use File::Spec    3.19 ();
 use File::HomeDir 0.58 ();
 use File::Path    qw( mkpath );
@@ -190,6 +191,30 @@ sub get_config_filename {
         return File::Spec->catdir( get_config_dir, 'config.ini' );
     }
 }
+
+#--------------------------------------------------------------------------#
+# normalize_id_file
+#--------------------------------------------------------------------------#
+
+sub normalize_id_file {
+    my ($self, $id_file) = @_;
+
+    # Windows does not use ~ to signify a home directory
+    if ( $^O eq 'MSWin32' && $id_file =~ m{^~/(.*)} ) {
+        $id_file = File::Spec->catdir(File::HomeDir->my_home, $1);
+    }
+    elsif ( $id_file =~ /~/ ) {
+        $id_file = File::Spec->canonpath(File::Glob::bsd_glob( $id_file ));
+    }
+    unless ( File::Spec->file_name_is_absolute( $id_file ) ) {
+        $id_file = File::Spec->catfile(
+            $self->get_config_dir, $id_file
+        );
+    }
+    return $id_file;
+}
+
+
 
 
 sub generate_profile {
