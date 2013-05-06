@@ -1,5 +1,12 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.04  2013-05-06
+      - continued porting CPAN::Reporter's common
+        configuration code.
+      - validation of configuration data.
+      - new public API for reading/writing
+        configuration data.
+
 0.03  2013-04-18
       - code to normalize Metabase's id_file.
       - adding extra variables according to the
