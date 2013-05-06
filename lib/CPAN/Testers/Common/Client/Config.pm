@@ -11,21 +11,210 @@ use IPC::Cmd;
 
 sub new {
     my ($class, %args) = @_;
-    my $prompt_ref = _set_prompt($args{myprompt});
-    my $warn_ref   = _set_warn($args{mywarn});
+    my $self = bless {
+        _prompt => undef,
+        _warn   => undef,
+        _print  => undef,
+        _config => {},
+    }, $class;
 
-    #--------------------------------------------------------------------------#
-    # config_spec -- returns configuration options information
-    #
-    # Keys include
-    #   default     --  recommended value, used in prompts and as a fallback
-    #                   if an options is not set; mandatory if defined
-    #   prompt      --  short prompt for EU::MM prompting
-    #   info        --  long description shown before prompting
-    #   validate    --  CODE ref; return normalized option or undef if invalid
-    #--------------------------------------------------------------------------#
+    my $warn = exists $args{'warn'} ? $args{'warn'} : \&CORE::warn;
+    $self->_set_mywarn( $warn )
+        or Carp::croak q(the 'warn' parameter must be a coderef);
 
-    my %option_specs = (
+    my $print = exists $args{'print'} ? $args{'print'} : sub { print @_ };
+    $self->_set_myprint( $print )
+        or Carp::croak q(the 'print' parameter must be a coderef);
+
+    # prompt is optional
+    if (exists $args{'prompt'}) {
+        $self->_set_myprompt( $args{'prompt'} )
+            or Carp::croak q(the 'prompt' parameter must be a coderef);
+    }
+
+    return $self;
+}
+
+sub read {
+    my $self = shift;
+    my $config = $self->_read_config_file or return;
+    my $options = $self->_get_config_options( $config );
+    $self->_store_config_data( $options );
+    return 1;
+}
+
+#######################
+### basic accessors ###
+#######################
+
+sub email_from  { return shift->{_config}{email_from} }
+sub edit_report { return shift->_config_data_for('edit_report', @_) }
+sub send_report { return shift->_config_data_for('send_report', @_) }
+sub send_duplicates { return shift->_config_data_for('send_duplicates', @_) }
+sub transport { return shift->{_config}{transport} }
+sub transport_name {
+    my $transport = shift->transport;
+    return $1 if $transport =~ /^(\w+(?:::\w+)*)\s?/;
+    return;
+}
+sub transport_args {
+    my $transport = shift->transport;
+    return [ split(/\s+/, $1) ] if $transport =~ /^\w+(?:::\w+)*\s+(\S.*)/;
+    return;
+}
+
+sub get_config_dir {
+    if ( defined $ENV{PERL_CPAN_REPORTER_DIR} &&
+         length  $ENV{PERL_CPAN_REPORTER_DIR}
+    ) {
+        return $ENV{PERL_CPAN_REPORTER_DIR};
+    }
+
+    my $conf_dir = File::Spec->catdir(File::HomeDir->my_home, ".cpanreporter");
+
+    if ($^O eq 'MSWin32') {
+      my $alt_dir = File::Spec->catdir(File::HomeDir->my_documents, ".cpanreporter");
+      $conf_dir = $alt_dir if -d $alt_dir && ! -d $conf_dir;
+    }
+
+    return $conf_dir;
+}
+
+sub get_config_filename {
+    if (  defined $ENV{PERL_CPAN_REPORTER_CONFIG} &&
+          length  $ENV{PERL_CPAN_REPORTER_CONFIG}
+    ) {
+        return $ENV{PERL_CPAN_REPORTER_CONFIG};
+    }
+    else {
+        return File::Spec->catdir( get_config_dir, 'config.ini' );
+    }
+}
+
+# the provided subrefs do not know about $self.
+sub mywarn   { my $r = shift->{_warn}; return $r->(@_)   }
+sub myprint  { my $r = shift->{_print}; return $r->(@_)  }
+sub myprompt { my $r = shift->{_prompt}; return $r->(@_) }
+sub _has_prompt { return (exists $_[0]->{_prompt} ? 1 : 0) }
+
+sub setup {
+    my $self = shift;
+
+    Carp::croak q{please provide a 'prompt' coderef to new()}
+        unless $self->_has_prompt;
+
+    my $config_dir = $self->get_config_dir;
+    mkpath $config_dir unless -d $config_dir;
+
+    unless ( -d $config_dir ) {
+        $self->myprint(
+          "\nCPAN Testers: couldn't create configuration directory '$config_dir': $!"
+        );
+        return;
+    }
+
+    my $config_file = $self->get_config_filename;
+
+    # explain grade:action pairs to the user
+    $self->myprint( _grade_action_prompt() );
+
+    my ($config, $existing_options) = ( {}, {} );
+
+    # read or create the config file
+    if ( -f $config_file ) {
+        $self->myprint("\nCPAN Testers: found your config file at:\n$config_file\n");
+
+        # bail out if we can't read it
+        $existing_options = $self->_read_config_file;
+        if ( !$existing_options ) {
+            $self->mywarn("\nCPAN Testers: configuration will not be changed\n");
+            return;
+        }
+
+        $self->myprint("\nCPAN Testers: Updating your configuration settings:\n");
+    }
+    else {
+        $self->myprint("\nCPAN Testers: no config file found; creating a new one.\n");
+    }
+
+    my %spec = $self->_config_spec;
+
+    foreach my $k ( $self->_config_order ) {
+        my $option_data = $spec{$k};
+        $self->myprint("\n$option_data->{info}\n");
+
+        # options with defaults are mandatory
+        if (defined $option_data->{default}) {
+
+            # as a side-effect, people may use '' without
+            # an actual default value to mark the option
+            # as mandatory. So we only show de default value
+            # if there is one.
+            if (length $option_data->{default}) {
+                $self->myprint("(Recommended: '$option_data->{default}')\n\n");
+            }
+            # repeat until validated
+            PROMPT:
+            while ( defined (
+                my $answer = $self->myprompt(
+                    "$k?",
+                    $existing_options->{$k} || $option_data->{default}
+                )
+            )) {
+                # TODO: I don't think _validate() is being used
+                # becuse of this. Should we remove it?
+                if ( ! $option_data->{validate} ||
+                       $option_data->{validate}->($self, $k, $answer, $config)
+                ) {
+                    $config->{$k} = $answer;
+                    last PROMPT;
+                }
+            }
+        }
+        else {
+            # only initialize options without defaults if the answer
+            # matches non white space and validates properly.
+            # Otherwise, just ignore it.
+            my $answer = $self->myprompt("$k?", $existing_options->{$k} || q{});
+            if ( $answer =~ /\S/ ) {
+                $config->{$k} = $answer;
+            }
+        }
+        # delete existing keys as we proceed so we know what's left
+        delete $existing_options->{$k};
+    }
+
+    # initialize remaining options
+    $self->myprint(
+        "\nYour CPAN Testers config file also contains these advanced options\n\n"
+    ) if keys %$existing_options;
+
+    foreach my $k ( keys %$existing_options ) {
+        $config->{$k} = $self->myprompt("$k?", $existing_options->{$k});
+    }
+
+    $self->myprint("\nCPAN Testers: writing config file to '$config_file'.\n");
+    if ( $self->_write_config_file( $config ) ) {
+        $self->_store_config_data( $config );
+        return $config;
+    }
+    else {
+        return;
+    }
+}
+
+#--------------------------------------------------------------------------#
+# _config_spec -- returns configuration options information
+#
+# Keys include
+#   default     --  recommended value, used in prompts and as a fallback
+#                   if an options is not set; mandatory if defined
+#   prompt      --  short prompt for EU::MM prompting
+#   info        --  long description shown before prompting
+#   validate    --  CODE ref; return normalized option or undef if invalid
+#--------------------------------------------------------------------------#
+sub _config_spec {
+    return (
     email_from => {
         default => '',
         prompt => 'What email address will be used to reference your reports?',
@@ -127,76 +316,161 @@ HERE
     retry_submission => {
         default => undef,
     },
+  );
+}
+
+#--------------------------------------------------------------------------#
+# _config_order -- determines order of interactive config.  Only items
+# in interactive config will be written to a starter config file
+#--------------------------------------------------------------------------#
+sub _config_order {
+    return qw(
+        email_from
+        edit_report
+        send_report
+        transport
     );
-
-    return bless {
-        _warn   => $warn_ref,
-        _prompt => $prompt_ref,
-        _specs  => \%option_specs,
-    }, $class;
-}
-
-sub config_spec { return $_[0]->{_spec} }
-
-sub myprompt { return $_[0]->{_prompt} }
-sub mywarn   { return $_[0]->{_warn}   }
-
-sub _set_prompt {
-    my $prompt = shift;
-    
-    return $prompt
-        if $prompt and ref $prompt and ref $prompt eq 'CODE';
-
-    eval { require IO::Prompt::Tiny };
-    Carp::croak 'please provide a prompt coderef or install IO::Prompt::Tiny'
-        if $@;
-
-    return \&IO::Prompt::Tiny::prompt;
-}
-
-sub _set_warn {
-    my $warn = shift;
-
-    return $warn
-        if $warn and ref $warn and ref $warn eq 'CODE';
-    
-    return \&CORE::warn;
 }
 
 
-sub get_config_dir {
-    if ( defined $ENV{PERL_CPAN_REPORTER_DIR} &&
-         length  $ENV{PERL_CPAN_REPORTER_DIR}
-    ) {
-        return $ENV{PERL_CPAN_REPORTER_DIR};
+sub _set_myprompt {
+    my ($self, $prompt) = @_;
+    if ($prompt and ref $prompt and ref $prompt eq 'CODE') {
+        $self->{_prompt} = $prompt;
+        return $self;
     }
-
-    my $conf_dir = File::Spec->catdir(File::HomeDir->my_home, ".cpanreporter");
-
-    if ($^O eq 'MSWin32') {
-      my $alt_dir = File::Spec->catdir(File::HomeDir->my_documents, ".cpanreporter");
-      $conf_dir = $alt_dir if -d $alt_dir && ! -d $conf_dir;
-    }
-
-    return $conf_dir;
+    return;
 }
 
-sub get_config_filename {
-    if (  defined $ENV{PERL_CPAN_REPORTER_CONFIG} &&
-          length  $ENV{PERL_CPAN_REPORTER_CONFIG}
-    ) {
-        return $ENV{PERL_CPAN_REPORTER_CONFIG};
+sub _set_mywarn {
+    my ($self, $warn) = @_;
+    if ($warn and ref $warn and ref $warn eq 'CODE') {
+        $self->{_warn} = $warn;
+        return $self;
     }
-    else {
-        return File::Spec->catdir( get_config_dir, 'config.ini' );
+    return;
+}
+
+sub _set_myprint {
+    my ($self, $print) = @_;
+    if ($print and ref $print and ref $print eq 'CODE') {
+        $self->{_print} = $print;
+        return $self;
     }
+    return;
+}
+
+# _read_config_file() is a trimmed down version of
+# Adam Kennedy's great Config::Tiny to fit our needs
+# (while also avoiding the extra toolchain dep).
+sub _read_config_file {
+    my $self = shift;
+    my $file = $self->get_config_filename;
+
+    # check the file
+    return $self->_config_error("File '$file' does not exist") unless -e $file;
+    return $self->_config_error("'$file' is a directory, not a file") unless -f _;
+    return $self->_config_error("Insufficient permissions to read '$file'") unless -r _;
+
+    open my $fh, '<', $file
+        or return $self->_config_error("Failed to open file '$file': $!");
+    my $contents = do { local $/; <$fh> };
+    close $fh;
+
+    my $config = {};
+    my $counter = 0;
+    foreach my $line ( split /(?:\015{1,2}\012|\015|\012)/, $contents ) {
+        $counter++;
+        next if $line =~ /^\s*(?:\#|\;|$)/; # skip comments and empty lines
+        $line =~ s/\s\;\s.+$//g;            # remove inline comments
+
+        # handle properties
+        if ( $line =~ /^\s*([^=]+?)\s*=\s*(.*?)\s*$/ ) {
+            $config->{$1} = $2;
+            next;
+        }
+
+        return $self->_config_error(
+            "Syntax error in config file '$file' at line $counter: '$_'"
+        );
+    }
+    return $config;
+}
+
+sub _write_config_file {
+    my ($self, $config) = @_;
+
+    my $contents = '';
+    foreach my $item ( sort keys %$config ) {
+        if ( $config->{$item} =~ /(?:\012|\015)/s ) {
+            return $self->_config_error("Illegal newlines in option '$item'");
+        }
+        $contents .= "$item=$config->{$item}\n";
+    }
+
+    my $file = $self->get_config_filename;
+    open my $fh, '>', $file
+        or return $self->_config_error("Error writing config file '$file': $!");
+
+    print $fh $contents;
+    close $fh;
+}
+
+sub _config_error {
+    my ($self, $msg) = @_;
+    $self->mywarn( "\nCPAN Testers: $msg\n" );
+    return;
+}
+
+
+sub _store_config_data {
+    my ($self, $config) = @_;
+    $self->{_config} = $config;
+}
+
+sub _config_data_for {
+    my ($self, $type, $grade) = @_;
+    my %spec = $self->config_spec;
+    my $data = exists $self->{_config}{$type} ? $self->{_config}{$type} : q();
+
+    my $dispatch = $spec{$type}{validate}->(
+        join( q{ }, 'default:no', $data )
+    );
+    return lc( $dispatch->{$grade} || $dispatch->{default} );
+}
+
+# extract and return valid options,
+# with fallback to defaults
+sub _get_config_options {
+    my ($self, $config) = @_;
+    my %spec = $self->_config_spec;
+
+    my %active;
+    OPTION: foreach my $option (keys %spec) {
+        if (exists $config->{$option} ) {
+            my $val = $config->{$option};
+            if ( $spec{$option}{validate}
+              && $spec{$option}{validate}->($option, $val)
+            ) {
+                $self->mywarn( "\nCPAN Testers: invalid option '$val' in '$option'. Using default value instead.\n\n" );
+                $active{$option} = $spec{$option}{default};
+                next OPTION;
+            }
+            $active{$option} = $val;
+        }
+        else {
+            $active{$option} = $spec{$option}{default}
+                if defined $spec{$option}{default};
+        }
+    }
+    return \%active;
 }
 
 #--------------------------------------------------------------------------#
-# normalize_id_file
+# _normalize_id_file
 #--------------------------------------------------------------------------#
 
-sub normalize_id_file {
+sub _normalize_id_file {
     my ($self, $id_file) = @_;
 
     # Windows does not use ~ to signify a home directory
@@ -214,11 +488,8 @@ sub normalize_id_file {
     return $id_file;
 }
 
-
-
-
-sub generate_profile {
-    my ($self, $id_file, $config) = @_;
+sub _generate_profile {
+    my ($id_file, $config) = @_;
 
     my $cmd = IPC::Cmd::can_run('metabase-profile');
     return unless $cmd;
@@ -250,7 +521,7 @@ sub generate_profile {
     );
 }
 
-sub grade_action_prompt {
+sub _grade_action_prompt {
     return << 'HERE';
 
 Some of the following configuration options require one or more "grade:action"
@@ -269,16 +540,16 @@ CPAN::Testers::Common::Client::Config documentation for more details.
 HERE
 }
 
-my @valid_actions = qw{ yes no ask/yes ask/no ask };
-sub is_valid_action {
-    my ($self, $action) = @_;
+sub _is_valid_action {
+    my $action = shift;
+    my @valid_actions = qw{ yes no ask/yes ask/no ask };
     return grep { $action eq $_ } @valid_actions;
 }
 
 
-my @valid_grades = qw{ pass fail unknown na default };
-sub is_valid_grade {
-    my ($self, $grade) = @_;
+sub _is_valid_grade {
+    my $grade = shift;
+    my @valid_grades = qw{ pass fail unknown na default };
     return grep { $grade eq $_ } @valid_grades;
 }
 
@@ -290,7 +561,7 @@ sub is_valid_grade {
 
 sub _validate {
     my ($self, $name, $value) = @_;
-    my $specs = $self->config_spec;
+    my $specs = $self->_config_spec;
     return 1 if ! exists $specs->{$name}{validate};
     return $specs->{$name}{validate}->($self, $name, $value);
 }
@@ -303,7 +574,7 @@ sub _validate {
 
 sub _validate_grade_action_pair {
     my ($self, $name, $option) = @_;
-    $option ||= "no";
+    $option ||= 'no';
 
     my %ga_map; # grade => action
 
@@ -321,13 +592,13 @@ sub _validate_grade_action_pair {
         }
         elsif ( _is_valid_grade($grade_action) ) {
             # grade by itself
-            $ga_map{$grade_action} = "yes";
+            $ga_map{$grade_action} = 'yes';
             next PAIR;
         }
         elsif( $grade_action =~ m{./.} ) {
             # gradelist by itself, so setup for later check
             $grade_list = $grade_action;
-            $action = "yes";
+            $action = 'yes';
         }
         else {
             # something weird, so warn and skip
@@ -400,10 +671,12 @@ sub _validate_transport {
             return;
         }
 
-        my $id_file = _normalize_id_file($1);
+        my $id_file = $self->_normalize_id_file($1);
 
         # Offer to create if it doesn't exist
         if ( ! -e $id_file )  {
+            return unless $self->myprompt; # skip unless we have a prompt!
+
             my $answer = $self->myprompt(
                 "\nWould you like to run 'metabase-profile' now to create '$id_file'?", "y"
             );
@@ -457,18 +730,75 @@ __END__
 
 =head1 NAME
 
-CPAN::Testers::Common::Client::Config - auxiliary functions for setting up
-CPAN Testers clients
+CPAN::Testers::Common::Client::Config - basic configuration for CPAN Testers clients
 
 =head1 WARNING!!!
 
-This is a *very* early module and an EXPERIMENTAL one for that matter.
-The API B<WILL CHANGE>. We're still moving stuff around, so please only
-use it if you understand and accept the consequences.
+C:T:C:C:Config is a *very* early module and a *highly* EXPERIMENTAL one for
+that matter. The API B<WILL CHANGE>. We're still moving stuff around, so
+please only use it if you understand and accept the consequences.
 
 If you have any questions, please contact the author.
 
-=head1 FUNCTIONS
+=head1 SYNOPSIS
+
+    my $config = CPAN::Testers::Common::Client::Config->new(
+        prompt => \&IO::Prompt::Tiny::prompt,
+    );
+
+    if ( -e $config->get_config_filename ) {
+        $config->read or return;
+    }
+    else {
+        print "CPAN Testers config file not found. Creating...";
+        $config->setup;
+    }
+
+    ## perform your test logging according to $config's data
+
+    ## send the report!
+    my $reporter = Test::Reporter->new(
+        from           => $config->email_from,
+        transport      => $config->transport_name,
+        transport_args => $config->transport_args,
+        ...
+    );
+
+=head1 METHODS
+
+=head2 new
+
+Instantiates a new CPAN::Testers::Common::Client::Config object. It may
+receive the following (optional) parameters:
+
+=over 4
+
+=item * warn => \&my_warn_function
+
+Inject your own warning function. Defaults to CORE::warn.
+
+=item * print => \&my_print_function
+
+Inject your own printing function. Defaults to C<< sub { print @_ } >>.
+
+=item * prompt => \&my_prompt_function
+
+Inject your own prompt function. Does B<not> have a default. The function
+is expected to receive two values: C<< ( $question, $default_value ) >>, and
+return a scalar containing the answer. Take a look at L<IO::Prompt::Tiny>
+and L<ExtUtils::MakeMaker>'s C<prompt()> functions for suitable candidates.
+
+If you plan on calling L</setup>, make sure you pass the 'prompt' argument to
+C<new()>.
+
+=back
+
+=head2 setup
+
+Prompts the user and sets up the CPAN Tester's configuration file (usually
+C<$HOME/.cpanreporter/config.ini>). This method B<requires> you to have set
+a proper C<prompt> function when you instantiated the object.
+
 
 =head2 get_config_dir()
 
@@ -480,29 +810,6 @@ Defaults to the '.cpantesters' directory  under your home directory
 =head2 get_config_filename()
 
 Returns the full path for the 'C<config.ini>' file.
-
-=head2 config_spec()
-
-Return the full config specification structure, containing available keys and
-their associated data, including validators and (suggested) default values.
-
-=head2 generate_profile( $id_file, $config )
-
-This function runs 'C<metabase-profile>' automatically for you. It receives as
-arguments C<$id_file>, which is the name of the target metabase id file; and
-C<$config>, which is a hashref of the user's 'C<config.ini>' file.
-
-=head2 grade_action_prompt()
-
-Describes grade:action pairs
-
-=head2 is_valid_action( $action_str )
-
-Returns true when an action string is valid for grade:action pairs.
-
-=head2 is_valid_grade( $grade_str )
-
-Returns true when a grade string is valid for grade_action pairs.
 
 =head2 CONFIGURATION AND ENVIRONMENT
 
