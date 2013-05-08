@@ -1,5 +1,4 @@
 Changes
-ignore.txt
 lib/CPAN/Testers/Common/Client.pm
 lib/CPAN/Testers/Common/Client/Config.pm
 lib/CPAN/Testers/Common/Client/PrereqCheck.pm
