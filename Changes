@@ -1,5 +1,9 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.05  2013-05-08
+      - fixed validation issue
+      - extra CTCC information added to META file
+
 0.04  2013-05-06
       - continued porting CPAN::Reporter's common
         configuration code.
