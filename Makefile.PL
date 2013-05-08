@@ -7,6 +7,7 @@ WriteMakefile(
     AUTHOR              => 'Breno G. de Oliveira <garu@cpan.org>',
     VERSION_FROM        => 'lib/CPAN/Testers/Common/Client.pm',
     ABSTRACT_FROM       => 'lib/CPAN/Testers/Common/Client.pm',
+    LICENSE             => 'perl',
     PL_FILES            => {},
     PREREQ_PM => {
         'Carp'                  => 0,
@@ -23,6 +24,11 @@ WriteMakefile(
         'File::HomeDir' => 0.58,
         'File::Path'    => 0,
         'IPC::Cmd'      => 0,
+    },
+    META_MERGE => {
+        resources => {
+            repository => 'https://github.com/garu/CPAN-Testers-Common-Client',
+        },
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'CPAN-Testers-Common-Client-*' },
