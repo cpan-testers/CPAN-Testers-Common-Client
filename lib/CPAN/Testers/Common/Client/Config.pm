@@ -39,7 +39,7 @@ sub read {
     my $self = shift;
     my $config = $self->_read_config_file or return;
     my $options = $self->_get_config_options( $config );
-    $self->_store_config_data( $options );
+    $self->_config_data( $options );
     return 1;
 }
 
@@ -162,7 +162,7 @@ sub setup {
                 )
             )) {
                 # TODO: I don't think _validate() is being used
-                # becuse of this. Should we remove it?
+                # because of this. Should we remove it?
                 if ( ! $option_data->{validate} ||
                        $option_data->{validate}->($self, $k, $answer, $config)
                 ) {
@@ -195,7 +195,7 @@ sub setup {
 
     $self->myprint("\nCPAN Testers: writing config file to '$config_file'.\n");
     if ( $self->_write_config_file( $config ) ) {
-        $self->_store_config_data( $config );
+        $self->_config_data( $config );
         return $config;
     }
     else {
@@ -422,10 +422,10 @@ sub _config_error {
     return;
 }
 
-
-sub _store_config_data {
+sub _config_data {
     my ($self, $config) = @_;
-    $self->{_config} = $config;
+    $self->{_config} = $config if $config;
+    return $self->{_config};
 }
 
 sub _config_data_for {
@@ -434,6 +434,8 @@ sub _config_data_for {
     my $data = exists $self->{_config}{$type} ? $self->{_config}{$type} : q();
 
     my $dispatch = $spec{$type}{validate}->(
+        $self,
+        $type,
         join( q{ }, 'default:no', $data )
     );
     return lc( $dispatch->{$grade} || $dispatch->{default} );
@@ -450,7 +452,7 @@ sub _get_config_options {
         if (exists $config->{$option} ) {
             my $val = $config->{$option};
             if ( $spec{$option}{validate}
-              && $spec{$option}{validate}->($option, $val)
+              && !$spec{$option}{validate}->($self, $option, $val)
             ) {
                 $self->mywarn( "\nCPAN Testers: invalid option '$val' in '$option'. Using default value instead.\n\n" );
                 $active{$option} = $spec{$option}{default};
@@ -489,7 +491,7 @@ sub _normalize_id_file {
 }
 
 sub _generate_profile {
-    my ($id_file, $config) = @_;
+    my ($id_file, $email) = @_;
 
     my $cmd = IPC::Cmd::can_run('metabase-profile');
     return unless $cmd;
@@ -498,7 +500,6 @@ sub _generate_profile {
     # might do for simple cases that users might actually provide
 
     my @opts = ("--output" => $id_file);
-    my $email = $config->{email_from};
 
     if ($email =~ /\A(.+)\s+<([^>]+)>\z/ ) {
         push @opts, "--email"   => $2;
@@ -580,7 +581,6 @@ sub _validate_grade_action_pair {
 
     PAIR: for my $grade_action ( split q{ }, $option ) {
         my ($grade_list,$action);
-
         if ( $grade_action =~ m{.:.} ) {
             # parse pair for later check
             ($grade_list, $action) = $grade_action =~ m{\A([^:]+):(.+)\z};
@@ -636,6 +636,7 @@ sub _validate_grade_action_pair {
 
 sub _validate_transport {
     my ($self, $name, $option, $config) = @_;
+    $config = $self->_config_data unless $config;
     my $transport = '';
 
     if ( $option =~ /^(\w+(?:::\w+)*)\s?/ ) {
@@ -681,7 +682,7 @@ sub _validate_transport {
                 "\nWould you like to run 'metabase-profile' now to create '$id_file'?", "y"
             );
             if ( $answer =~ /^y/i ) {
-                return _generate_profile( $id_file, $config );
+                return _generate_profile( $id_file, $config->{email} );
             }
             else {
                 $self->mywarn( <<"END_ID_FILE" );
@@ -710,14 +711,14 @@ END_ID_FILE
 }
 
 sub _validate_seconds {
-    my ($name, $option) = @_;
+    my ($self, $name, $option) = @_;
     return unless defined($option) && length($option)
         && ($option =~ /^\d/) && $option >= 0;
     return $option;
 }
 
 sub _validate_skipfile {
-    my ($name, $option) = @_;
+    my ($self, $name, $option) = @_;
     return unless $option;
     my $skipfile = File::Spec->file_name_is_absolute( $option )
                  ? $option : File::Spec->catfile( _get_config_dir(), $option );
