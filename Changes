@@ -1,5 +1,12 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.06  2013-05-09
+      - better handling transport name/args
+      - fixed Metabase transport issue where
+        the normalized id_file was not being
+        used as a transport argument (thanks
+        Lars for reporting)
+
 0.05  2013-05-08
       - fixed validation issue
       - extra CTCC information added to META file
