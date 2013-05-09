@@ -52,16 +52,8 @@ sub edit_report { return shift->_config_data_for('edit_report', @_) }
 sub send_report { return shift->_config_data_for('send_report', @_) }
 sub send_duplicates { return shift->_config_data_for('send_duplicates', @_) }
 sub transport { return shift->{_config}{transport} }
-sub transport_name {
-    my $transport = shift->transport;
-    return $1 if $transport =~ /^(\w+(?:::\w+)*)\s?/;
-    return;
-}
-sub transport_args {
-    my $transport = shift->transport;
-    return [ split(/\s+/, $1) ] if $transport =~ /^\w+(?:::\w+)*\s+(\S.*)/;
-    return;
-}
+sub transport_name { return shift->{_transport_name} }
+sub transport_args { return shift->{_transport_args} }
 
 sub get_config_dir {
     if ( defined $ENV{PERL_CPAN_REPORTER_DIR} &&
@@ -638,9 +630,10 @@ sub _validate_transport {
     my ($self, $name, $option, $config) = @_;
     $config = $self->_config_data unless $config;
     my $transport = '';
+    my $transport_args = '';
 
-    if ( $option =~ /^(\w+(?:::\w+)*)\s?/ ) {
-        $transport = $1;
+    if ( $option =~ /^(\w+(?:::\w+)*)\s*(\S.*)$/ ) {
+        ($transport, $transport_args) = ($1, $2);
         my $full_class = "Test::Reporter::Transport::$transport";
         eval "use $full_class ()";
         if ($@) {
@@ -658,14 +651,14 @@ sub _validate_transport {
 
     # we do extra validation for Metabase and offer to create the profile
     if ( $transport eq 'Metabase' ) {
-        unless ( $option =~ /\buri\s+\S+/ ) {
+        unless ( $transport_args =~ /\buri\s+\S+/ ) {
             $self->mywarn(
                 "\nPlease provide a target uri.\n\n"
             );
             return;
         }
 
-        unless ( $option =~ /\bid_file\s+(\S.+?)\s*$/ ) {
+        unless ( $transport_args =~ /\bid_file\s+(\S.+?)\s*$/ ) {
             $self->mywarn(
                 "\nPlease specify an id_file path.\n\n"
             );
@@ -682,7 +675,7 @@ sub _validate_transport {
                 "\nWould you like to run 'metabase-profile' now to create '$id_file'?", "y"
             );
             if ( $answer =~ /^y/i ) {
-                return _generate_profile( $id_file, $config->{email} );
+                return unless _generate_profile( $id_file, $config->{email} );
             }
             else {
                 $self->mywarn( <<"END_ID_FILE" );
@@ -705,8 +698,14 @@ END_ID_FILE
             );
             return;
         }
+
+        # when we store the transport args internally,
+        # we should use the normalized id_file.
+        $transport_args =~ s/(\bid_file\s+)(\S.+?)\s*$/$1$id_file/;
     } # end Metabase
 
+    $self->{_transport_name} = $transport;
+    $self->{_transport_args} = [ split( /\s+/ => $transport_args ) ];
     return 1;
 }
 
