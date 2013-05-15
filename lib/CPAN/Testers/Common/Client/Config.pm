@@ -814,7 +814,7 @@ a proper C<prompt> function when you instantiated the object.
 =head2 get_config_dir()
 
 The base directory in which your 'C<config.ini>' and other files reside.
-Defaults to the '.cpantesters' directory  under your home directory
+Defaults to the '.cpanreporter' directory  under your home directory
 (if you're using Linux or OS X) or under the 'my documents' folder
 (if you're running Windows).
 
