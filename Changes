@@ -1,5 +1,10 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.07  2013-05-15
+      - fixed metabase_id generation prompting
+        (thanks SYP for reporting!)
+      - improved handling of email strings
+
 0.06  2013-05-09
       - better handling transport name/args
       - fixed Metabase transport issue where
