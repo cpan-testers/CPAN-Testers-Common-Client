@@ -87,7 +87,7 @@ sub get_config_filename {
 sub mywarn   { my $r = shift->{_warn}; return $r->(@_)   }
 sub myprint  { my $r = shift->{_print}; return $r->(@_)  }
 sub myprompt { my $r = shift->{_prompt}; return $r->(@_) }
-sub _has_prompt { return (exists $_[0]->{_prompt} ? 1 : 0) }
+sub _has_prompt { return exists $_[0]->{_prompt} }
 
 sub setup {
     my $self = shift;
@@ -210,6 +210,7 @@ sub _config_spec {
     email_from => {
         default => '',
         prompt => 'What email address will be used to reference your reports?',
+        validate => \&_validate_email,
         info => <<'HERE',
 CPAN Testers requires a valid email address to identify senders
 in the body of a test report. Please use a standard email format
@@ -298,6 +299,7 @@ HERE
     },
     email_to => {
         default => undef,
+        validate => \&_validate_email,
     },
     editor => {
         default => undef,
@@ -669,13 +671,13 @@ sub _validate_transport {
 
         # Offer to create if it doesn't exist
         if ( ! -e $id_file )  {
-            return unless $self->myprompt; # skip unless we have a prompt!
+            return unless $self->_has_prompt; # skip unless we have a prompt!
 
             my $answer = $self->myprompt(
                 "\nWould you like to run 'metabase-profile' now to create '$id_file'?", "y"
             );
             if ( $answer =~ /^y/i ) {
-                return unless _generate_profile( $id_file, $config->{email} );
+                return unless _generate_profile( $id_file, $config->{email_from} );
             }
             else {
                 $self->mywarn( <<"END_ID_FILE" );
@@ -722,6 +724,15 @@ sub _validate_skipfile {
     my $skipfile = File::Spec->file_name_is_absolute( $option )
                  ? $option : File::Spec->catfile( _get_config_dir(), $option );
     return -r $skipfile ? $skipfile : undef;
+}
+
+# not really a validation, just making sure
+# it's not empty and contains a '@'
+sub _validate_email {
+  my ($self, $name, $option) = @_;
+  return unless $option;
+  my @data = split '@', $option;
+  return $option if scalar @data == 2;
 }
 
 
