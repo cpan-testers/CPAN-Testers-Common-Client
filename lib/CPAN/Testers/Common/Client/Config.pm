@@ -634,6 +634,7 @@ sub _validate_transport {
     my $transport = '';
     my $transport_args = '';
 
+    my $id_file;
     if ( $option =~ /^(\w+(?:::\w+)*)\s*(\S.*)$/ ) {
         ($transport, $transport_args) = ($1, $2);
         my $full_class = "Test::Reporter::Transport::$transport";
@@ -667,7 +668,7 @@ sub _validate_transport {
             return;
         }
 
-        my $id_file = $self->_normalize_id_file($1);
+        $id_file = $self->_normalize_id_file($1);
 
         # Offer to create if it doesn't exist
         if ( ! -e $id_file )  {
@@ -703,11 +704,14 @@ END_ID_FILE
 
         # when we store the transport args internally,
         # we should use the normalized id_file.
-        $transport_args =~ s/(\bid_file\s+)(\S.+?)\s*$/$1$id_file/;
+        $transport_args =~ s/(\bid_file\s+)(\S.+?)\s*$//;
+        warn $id_file;
+        warn $transport_args;
     } # end Metabase
 
     $self->{_transport_name} = $transport;
     $self->{_transport_args} = [ split( /\s+/ => $transport_args ) ];
+    push @{ $self->{_transport_args} }, ('id_file', $id_file);
     return 1;
 }
 
