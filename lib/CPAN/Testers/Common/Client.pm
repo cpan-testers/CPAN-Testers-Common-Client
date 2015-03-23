@@ -508,7 +508,7 @@ sub _version_finder {
     print {$fh} map { "$_ $prereqs{$_}\n" } keys %prereqs;
     close $fh;
 
-    my $prereq_result = capture { system( $perl, $version_finder, '<', $prereq_input ) };
+    my $prereq_result = capture { system( $perl, $version_finder, $prereq_input ) };
     unlink $prereq_input;
 
     my %result;
