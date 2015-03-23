@@ -281,11 +281,13 @@ sub _format_vars_report {
     return $report;
 }
 
+sub _fix_unknown { defined $_[0] ? $_[0] : 'unknown' }
+
 sub _format_toolchain_report {
     my $installed = shift;
     my $mod_width = _max_length( keys %$installed );
     my $ver_width = _max_length(
-        map { $installed->{$_} } keys %$installed
+        map { _fix_unknown( $installed->{$_} ) } keys %$installed
     );
 
     my $format = "    \%-${mod_width}s \%-${ver_width}s\n";
@@ -296,7 +298,7 @@ sub _format_toolchain_report {
 
     for my $var ( sort keys %$installed ) {
         $report .= sprintf("    \%-${mod_width}s \%-${ver_width}s\n",
-                            $var, $installed->{$var} );
+                            $var, _fix_unknown($installed->{$var}) );
     }
 
     return $report;
@@ -330,7 +332,7 @@ sub _format_prereq_report {
         foreach my $module ( keys %$requires ) {
             my $name_length = length $module;
             my $need_length = length $requires->{$module};
-            my $have_length = length $have{$section}{$module};
+            my $have_length = length _fix_unknown( $have{$section}{$module} );
             $name_width = $name_length if $name_length > $name_width;
             $need_width = $need_length if $need_length > $need_width;
             $have_width = $have_length if $have_length > $have_width;
@@ -355,7 +357,7 @@ sub _format_prereq_report {
 
       foreach my $module ( sort {lc $a cmp lc $b} keys %$requires ) {
         my $need = $requires->{$module};
-        my $have = $have{$section}{$module};
+        my $have = _fix_unknown( $have{$section}{$module} );
         my $bad = $prereq_met{$section}{$module} ? " " : "!";
         $report .= sprintf( $format_str, $bad, $module, $need, $have);
       }
