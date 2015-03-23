@@ -508,9 +508,12 @@ sub _version_finder {
     print {$fh} map { "$_ $prereqs{$_}\n" } keys %prereqs;
     close $fh;
 
-    my $prereq_result = capture { system( $perl, $version_finder, $prereq_input ) };
+    my ( $prereq_result, $error, $exit ) = capture { system( $perl, $version_finder, $prereq_input ) };
     unlink $prereq_input;
 
+    if ( length $error ) {
+      print STDERR $error;
+    }
     my %result;
     for my $line ( split "\n", $prereq_result ) {
         next unless length $line;
