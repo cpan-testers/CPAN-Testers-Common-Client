@@ -651,23 +651,25 @@ sub _validate_transport {
         return;
     }
 
+    my %args = split /\s+/ => $transport_args;
+
     # we do extra validation for Metabase and offer to create the profile
     if ( $transport eq 'Metabase' ) {
-        unless ( $transport_args =~ /\buri\s+\S+/ ) {
+        unless ( $args{uri} ) {
             $self->mywarn(
                 "\nPlease provide a target uri.\n\n"
             );
             return;
         }
 
-        unless ( $transport_args =~ /\bid_file\s+(\S.+?)\s*$/ ) {
+        unless ( $args{id_file} ) {
             $self->mywarn(
                 "\nPlease specify an id_file path.\n\n"
             );
             return;
         }
 
-        my $id_file = $self->_normalize_id_file($1);
+        my $id_file = $self->_normalize_id_file($args{id_file});
 
         # Offer to create if it doesn't exist
         if ( ! -e $id_file )  {
@@ -703,11 +705,11 @@ END_ID_FILE
 
         # when we store the transport args internally,
         # we should use the normalized id_file.
-        $transport_args =~ s/(\bid_file\s+)(\S.+?)\s*$/$1$id_file/;
+        $args{id_file} = $id_file;
     } # end Metabase
 
     $self->{_transport_name} = $transport;
-    $self->{_transport_args} = [ split( /\s+/ => $transport_args ) ];
+    $self->{_transport_args} = [ %args ];
     return 1;
 }
 
