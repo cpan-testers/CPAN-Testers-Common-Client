@@ -12,7 +12,7 @@ delete $ENV{PERL_CPAN_REPORTER_DIR};
 delete $ENV{PERL_CPAN_REPORTER_CONFIG};
 
 my $temp_home = tempdir(
-    "CPAN-Reporter-testhome-XXXXXXXX", TMPDIR => 1, CLEANUP => 1
+    "CPAN-Testers-Common-Client-testhome-XXXXXXXX", TMPDIR => 1, CLEANUP => 1
 ) or die "Couldn't create a temporary config directory: $!\nIs your temp drive full?";
 
 my $home_dir = File::Spec->rel2abs( $temp_home );
