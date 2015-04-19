@@ -13,7 +13,7 @@ use CPAN::Testers::Common::Client::PrereqCheck;
 
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 
 #==================================
