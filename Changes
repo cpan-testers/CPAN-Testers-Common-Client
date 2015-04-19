@@ -1,5 +1,13 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.09  2015-04-18
+      - Improved documentation
+      - Don't attempt to open a literal file '<' in the modulino (Kent Fredric);
+      - Capture and report errors encountered by the modulino (Kent Fredric);
+      - Warn if the prereq check module gave no output (Kent Fredric);
+      - Defend against undef issues that occur when version extraction goes awry (Kent Fredric);
+      - More test cases (Kent Fredric);
+
 0.08  2015-04-18
       - history support (to prevent sending duplicate reports)
 
