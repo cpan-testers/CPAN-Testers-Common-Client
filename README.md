@@ -3,6 +3,7 @@
 Common code for CPAN Testers' clients
 
 [![Build Status](https://travis-ci.org/garu/CPAN-Testers-Common-Client.svg?branch=master)](https://travis-ci.org/garu/CPAN-Testers-Common-Client)
+[![Coverage Status](https://coveralls.io/repos/garu/CPAN-Testers-Common-Client/badge.svg?branch=master)](https://coveralls.io/r/garu/CPAN-Testers-Common-Client?branch=master)
 
 This module provides a common client for constructing metabase facts and
 the legacy email message sent to CPAN Testers in a way that is properly
