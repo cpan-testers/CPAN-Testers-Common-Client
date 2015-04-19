@@ -1,4 +1,4 @@
-#### CPAN-Testers-Common-Client ####
+### CPAN-Testers-Common-Client ###
 
 Common code for CPAN Testers' clients
 
@@ -21,7 +21,8 @@ at the command line. Just type:
 
 after the the module is installed.
 
-##### Installation #####
+
+#### Installation ####
 
     cpanm CPAN::Testers::Common::Client
 
@@ -33,7 +34,7 @@ Or manually, by running the following commands:
 	make install
 
 
-COPYRIGHT AND LICENCE
+#### COPYRIGHT AND LICENCE ####
 
 Copyright (C) 2012-2015, Breno G. de Oliveira
 
