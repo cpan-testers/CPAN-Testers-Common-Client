@@ -1,5 +1,9 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.10  2015-04-19
+      - is_duplicate() and record_history() available as methods
+        from within CTCC.
+
 0.09  2015-04-18
       - Improved documentation
       - Don't attempt to open a literal file '<' in the modulino (Kent Fredric);
