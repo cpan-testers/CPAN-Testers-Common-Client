@@ -19,6 +19,8 @@ WriteMakefile(
         'File::Spec'            => 3.19,
         'Probe::Perl'           => 0,
         'Test::More'            => 0,
+        'Fcntl'                 => 0,
+        'IO::File'              => 0,
 
         # C:T:C:C:Config also relies on:
         'File::HomeDir' => 0.58,
