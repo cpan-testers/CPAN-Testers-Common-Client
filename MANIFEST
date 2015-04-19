@@ -10,6 +10,7 @@ t/00.load.t
 t/01-basic.t
 t/02-config.t
 t/03-history.t
+t/03-undef-prereq-report.t
 t/MockHomeDir.pm
 xt/perlcritic.t
 xt/pod-coverage.t
