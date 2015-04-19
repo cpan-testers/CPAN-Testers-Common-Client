@@ -722,7 +722,7 @@ sub _validate_skipfile {
     my ($self, $name, $option) = @_;
     return unless $option;
     my $skipfile = File::Spec->file_name_is_absolute( $option )
-                 ? $option : File::Spec->catfile( _get_config_dir(), $option );
+                 ? $option : File::Spec->catfile( get_config_dir(), $option );
     return -r $skipfile ? $skipfile : undef;
 }
 
