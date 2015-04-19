@@ -30,6 +30,8 @@ WriteMakefile(
     META_MERGE => {
         resources => {
             repository => 'https://github.com/garu/CPAN-Testers-Common-Client',
+            bugtracker => 'https://github.com/garu/CPAN-Testers-Common-Client/issues',
+            license    => 'http://dev.perl.org/licenses/',
         },
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
