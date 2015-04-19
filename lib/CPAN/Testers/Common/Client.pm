@@ -215,7 +215,7 @@ sub _populate_testenvironment {
 
 sub _populate_prereqs {
     my $self = shift;
-   
+
     # TODO: update Fact::Prereqs to use the new meta::spec for prereqs 
     # TODO: add the 'test' prereqs?
     return $self->{_meta}{prereqs}
@@ -527,15 +527,14 @@ sub _temp_filename {
 # CPAN::Distribution::unsat_prereq()
 #
 #--------------------------------------------------------------------------#
- 
 my $version_finder = $INC{'CPAN/Testers/Common/Client/PrereqCheck.pm'};
- 
+
 sub _version_finder {
     my %prereqs = @_;
- 
+
     my $perl = Probe::Perl->find_perl_interpreter();
     my @prereq_results;
- 
+
     my $prereq_input = _temp_filename( 'CTCC-' );
     open my $fh, '>', $prereq_input
         or die "Could not create temporary '$prereq_input' for prereq analysis: $!";
