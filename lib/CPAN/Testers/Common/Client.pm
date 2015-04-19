@@ -517,7 +517,7 @@ sub _version_finder {
       print STDERR $error;
     }
     if ( not length $prereq_result) {
-      warn "Got no output from CPAN::Testers::Common::Client::Prereq::Check";
+      warn "Got no output from CPAN::Testers::Common::Client::PrereqCheck";
     }
     my %result;
     for my $line ( split "\n", $prereq_result ) {
