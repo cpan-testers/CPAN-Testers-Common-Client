@@ -720,28 +720,45 @@ L<CPAN::Testers::Common::Client::Config>.
 
 =head2 Constructor
 
+=head3 new
+
 Calling C<new()> creates a new object. You B<must> pass a hash as argument setting at least
 I<distname>, I<author> and I<grade>. See below for their meaning.
 
-=back
-
 =head2 Accessors
 
-=over 4
+=head3 author
 
-=item * author - the evaluated distribution's author. Could be a PAUSE id or a full name. B<Required>.
+B<Required>.
 
-=item * distname - distribution name, in C<Dist-Name-version.suffix> format. B<Required>.
+The evaluated distribution's author. Could be a PAUSE id or a full name.
 
-=item * grade - 'pass', 'fail', 'na', 'unknown'. B<Required>.
+=head3 distname
 
-=item * comments - tester's comments. Defaults to 'none provided' (but see L</AUTOMATED_TESTING> below)
+B<Required>.
 
-=item * via - sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to "Your friendly CPAN Testers client"
+The distribution name, in C<Dist-Name-version.suffix> format.
 
-=item * command - the command used to test the distribution.
+=head3 grade
 
-=back
+B<Required>.
+
+The grade for the distribution's test result. Can be C<'pass'>, C<'fail'>,
+C<'na'> or C<'unknown'>.
+
+=head3 comments
+
+Any additional comments from the tester. Defaults to C<'none provided'>
+(but see L</AUTOMATED_TESTING> below).
+
+=head3 via
+
+The sender module (CPAN::Reporter, CPANPLUS, etc). Defaults to
+"Your friendly CPAN Testers client".
+
+=head3 command
+
+The command used to test the distribution.
 
 =head2 Methods
 
@@ -814,28 +831,28 @@ Breno G. de Oliveira  C<< <garu@cpan.org> >>
 
 =head1 ACKNOWLEDGMENTS
 
-This module was created at the L<http://2012.qa-hackathon.org|2012 Perl QA Hackathon>, so a big
+This module was created at the L<2012 Perl QA Hackathon|http://2012.qa-hackathon.org>, so a big
 THANK YOU is in order to all the companies and organisations that supported it, namely the
-L<http://www.cite-sciences.fr/|Cité des Sciences>, L<http://www.diabolocom.com/|Diabolocom>,
-L<http://www.dijkmat.nl/|Dijkmat>, L<http://www.duckduckgo.com/|DuckDuckGo>,
-L<http://www.dyn.com/|Dyn>, L<http://freeside.biz/|Freeside>, L<http://www.hederatech.com/|Hedera>,
-L<http://www.jaguar-network.com/|Jaguar>, L<http://www.shadow.cat/|ShadowCat>,
-L<http://www.splio.com/|Splio>, L<http://www.teclib.com/|TECLIB'>, L<http://weborama.com/|Weborama>,
-L<http://www.enlightenedperl.org/|EPO>, L<http://www.perl-magazin.de/|$foo Magazin> and
-L<http://www.mongueurs.net/|Mongueurs de Perl>.
+L<Cité des Sciences|http://www.cite-sciences.fr/>, L<Diabolocom|http://www.diabolocom.com/>,
+L<Dijkmat|http://www.dijkmat.nl/>, L<DuckDuckGo|http://www.duckduckgo.com/>,
+L<Dyn|http://www.dyn.com/>, L<Freeside|http://freeside.biz/>, L<Hedera|http://www.hederatech.com/>,
+L<Jaguar|http://www.jaguar-network.com/>, L<ShadowCat|http://www.shadow.cat/>,
+L<Splio|http://www.splio.com/>, L<TECLIB'|http://www.teclib.com/>, L<Weborama|http://weborama.com/>,
+L<EPO|http://www.enlightenedperl.org/>, L<$foo Magazin|http://www.perl-magazin.de/> and
+L<Mongueurs de Perl|http://www.mongueurs.net/>.
 
 Also, this module could never be done without the help, contribution and insights of
-L<https://metacpan.org/author/DAGOLDEN|David Golden>,
-L<https://metacpan.org/author/BARBIE|Barbie>,
-L<https://metacpan.org/author/ANDK|Andreas Koenig>
-and L<https://metacpan.org/author/MIYAGAWA|Tatsuhiko Miyagawa>.
+L<David Golden|https://metacpan.org/author/DAGOLDEN>,
+L<Barbie|https://metacpan.org/author/BARBIE>,
+L<Andreas König|https://metacpan.org/author/ANDK>
+and L<Tatsuhiko Miyagawa|https://metacpan.org/author/MIYAGAWA>.
 
 All bugs and mistakes are my own.
 
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2012-2013, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
+Copyright (c) 2012-2015, Breno G. de Oliveira C<< <garu@cpan.org> >>. All rights reserved.
 
 Parts of the internals in this distribution were refactored from
 CPAN::Reporter, Copyright (c) 2012 David Golden,
