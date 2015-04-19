@@ -10,6 +10,7 @@ use Carp ();
 use File::Spec;
 use Capture::Tiny qw(capture);
 use CPAN::Testers::Common::Client::PrereqCheck;
+use CPAN::Testers::Common::Client::History;
 
 use constant MAX_OUTPUT_LENGTH => 1_000_000;
 
@@ -121,6 +122,37 @@ sub command {
 #  PUBLIC METHODS
 #====================================
 
+sub is_duplicate {
+    my ($self) = @_;
+
+    my $grade     = $self->grade;
+    my $dist_name = $self->distname;
+    return 0 unless $grade && $dist_name;
+
+    #FIXME: CPAN::Reporter allows for 3 phases: 'PL', 'make' or 'test'.
+    # Until this is properly ported, we'll only use the 'test' phase.
+    return CPAN::Testers::Common::Client::History::is_duplicate({
+        phase     => 'test',
+        grade     => $grade,
+        dist_name => $dist_name,
+    });
+}
+
+sub record_history {
+    my ($self) = @_;
+
+    my $grade     = $self->grade;
+    my $dist_name = $self->distname;
+    return unless $grade && $dist_name;
+
+    #FIXME: CPAN::Reporter allows for 3 phases: 'PL', 'make' or 'test'.
+    # Until this is properly ported, we'll only use the 'test' phase.
+    return CPAN::Testers::Common::Client::History::record_history({
+        phase     => 'test',
+        grade     => $grade,
+        dist_name => $dist_name,
+    });
+}
 
 sub populate {
     my $self = shift;
@@ -786,6 +818,16 @@ This method B<will> call C<populate()> if populate hasn't been called yet.
 
 Returns the already populated metabase data structure. Note that this will B<NOT> call C<populate()>
 so you will get undef or cached data unless you call C<populate()> yourself.
+
+=head3 is_duplicate
+
+Returns true if this report was already sent by the current user in the past,
+and false otherwise.
+
+=head3 record_history
+
+Records report into the history file (so C<is_duplicate()> returns true for
+it in the future.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 

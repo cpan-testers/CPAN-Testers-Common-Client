@@ -1,7 +1,43 @@
 use strict;
 use warnings;
-use Test::More;
+use Test::More tests => 41;
 use CPAN::Testers::Common::Client;
+
+can_ok( 'CPAN::Testers::Common::Client',
+    qw( new comments via author distname grade command
+        is_duplicate record_history
+        populate metabase_data email
+    )
+);
+
+{
+    no warnings 'redefine';
+    *CPAN::Testers::Common::Client::History::is_duplicate = sub {
+        my $params = shift;
+        is_deeply(
+            $params,
+            {
+                phase     => 'test',
+                dist_name => 'CPAN-Metabase-Fact-0.001',
+                grade     => 'pass',
+            },
+            'is_duplicate() called with the right params'
+        );
+    };
+    *CPAN::Testers::Common::Client::History::record_history= sub {
+        my $params = shift;
+        is_deeply(
+            $params,
+            {
+                phase     => 'test',
+                dist_name => 'CPAN-Metabase-Fact-0.001',
+                grade     => 'pass',
+            },
+            'record_history() called with the right params'
+        );
+    };
+}
+
 
 my $author = 'RJBS';
 my $dist   = 'CPAN-Metabase-Fact-0.001';
@@ -23,6 +59,9 @@ is $client->distname, $dist, 'got proper distname';
 is $client->grade, $grade, 'got the proper grade';
 
 is $client->command, '', 'got the proper command';
+
+$client->is_duplicate();
+$client->record_history();
 
 is(
     $client->via,
@@ -108,4 +147,3 @@ like $email, qr/Test::Builder/, 'configure_prereq';
 like $email, qr|Output from '/compile/and/test/me/please':|, 'command';
 
 
-done_testing;
