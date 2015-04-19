@@ -12,7 +12,7 @@ CPAN Testers infrastructure.
 
 For the complete documentation, please refer to:
 
-    http://metacpan.org/module/CPAN::Testers::Common::Client
+http://metacpan.org/module/CPAN::Testers::Common::Client
 
 That same documentation will also be available to you after installation
 at the command line. Just type:
