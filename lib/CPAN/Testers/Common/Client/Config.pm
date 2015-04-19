@@ -804,6 +804,11 @@ C<new()>.
 
 =back
 
+=head2 read
+
+Reads and parses the existing CPAN Tester's configuration file
+(usually C<$HOME/.cpanreporter/config.ini> into the main object.
+
 =head2 setup
 
 Prompts the user and sets up the CPAN Tester's configuration file (usually
@@ -833,6 +838,36 @@ Overrides the value for C<get_config_dir()>.
 =item * PERL_CPAN_REPORTER_CONFIG
 
 Overrides the value for C<get_config_filename()>.
+
+=back
+
+=head2 Other methos & accessors
+
+This class also provides some semi-public methods and accessors that most
+likely will move around even more than the others, but that are listed here
+for completeness sake. You should really not use nor rely on those:
+
+=over 4
+
+=item * edit_report - accessor for the 'edit_report' setting.
+
+=item * email_from - accessor for the 'email_from' setting.
+
+=item * myprint - accessor for the print function.
+
+=item * myprompt - accessor for the prompt function.
+
+=item * mywarn - accessor for the warn function.
+
+=item * send_duplicates - accessor for the 'send_duplicates' setting.
+
+=item * send_report - accessor for the 'send_report' setting.
+
+=item * transport - accessor for the 'transport' setting.
+
+=item * transport_name - returns the transport name.
+
+=item * transport_args - returns the transport arguments.
 
 =back
 
