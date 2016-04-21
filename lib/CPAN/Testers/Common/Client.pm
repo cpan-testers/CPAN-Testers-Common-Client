@@ -839,6 +839,9 @@ If the C<AUTOMATED_TESTING> environment variable is set to true, the default com
 
 Otherwise, the default message is C<'none provided'>.
 
+CPAN::Testers::Common::Client::Config also has
+L<< some interesting environment variables|CPAN::Testers::Common::Client::Config/"CONFIGURATION AND ENVIRONMENT" >>.
+
 =head2 Source Code
 
 This is open source software.  The code repository is available for
