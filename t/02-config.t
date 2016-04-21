@@ -6,6 +6,43 @@ use File::Spec;
 
 use_ok( 'CPAN::Testers::Common::Client::Config' );
 
+# ---- parser checks
+my $parser = \&CPAN::Testers::Common::Client::Config::_parse_transport_args;
+is_deeply(
+    $parser->('uri'),
+    ['uri'],
+    'simplest transport arg parsing'
+);
+is_deeply(
+    $parser->('"foo bar"'),
+    ['foo bar'],
+    'simplest transport arg parsing with double quotes'
+);
+
+is_deeply(
+    $parser->('uri https://foo id_file bar'),
+    [qw(uri https://foo id_file bar)],
+    'complete transport args parsing'
+);
+is_deeply(
+    $parser->('uri https://foo id_file "foo bar"'),
+    ['uri', 'https://foo', 'id_file', 'foo bar'],
+    'complete transport args parsing with double quotes'
+);
+
+is_deeply(
+    $parser->(q(uri https://foo id_file 'foo bar')),
+    ['uri', 'https://foo', 'id_file', 'foo bar'],
+    'complete transport args parsing with single quotes'
+);
+
+my $bs = "\x5c"; # <-- backslash character! "\"
+is_deeply(
+    $parser->(qq("a b" c 'd e' f "g 'h" 'i " j' k 'a${bs}"' "l${bs}"m" 'x${bs}${bs}y' 'a${bs}${bs}${bs}'b' )),
+    [ 'a b', 'c', 'd e', 'f', "g 'h", 'i " j', 'k', 'a"', q(l"m), qq(x${bs}y), qq(a${bs}'b)],
+    'complete transport args parsing with multiple quotes and escapes'
+);
+
 my $td = tempdir(File::Spec->catdir('t', 'cf XXXX'), CLEANUP => 1);
 to_file(File::Spec->catfile($td, 'config.ini'), <<'EOF');
 edit_report=default:ask/no pass/na:no
@@ -54,5 +91,14 @@ is_deeply \%args, {
         'id_file',
         $id_file,
 }, 'transport_args content';
+
+my $args = $config->transport_args;
+is ref $args, 'ARRAY', 'transport_args is an array ref';
+
+# ---- extra normalizer checks
+my $normalized = $config->_normalize_id_file('~/some/file');
+unlike $normalized, qr(~), 'relative "~" paths are resolved';
+$normalized = $config->_normalize_id_file('"/some path/file"');
+is $normalized, '/some path/file', 'quoted paths have quotes removed';
 
 done_testing;

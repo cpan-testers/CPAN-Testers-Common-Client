@@ -469,6 +469,9 @@ sub _get_config_options {
 sub _normalize_id_file {
     my ($self, $id_file) = @_;
 
+    # if file path is enclosed in quotes, remove them:
+    $id_file =~ s/\A(['"])(.+)\1\z/$2/;
+
     # Windows does not use ~ to signify a home directory
     if ( $^O eq 'MSWin32' && $id_file =~ m{^~/(.*)} ) {
         $id_file = File::Spec->catdir(File::HomeDir->my_home, $1);
@@ -651,25 +654,23 @@ sub _validate_transport {
         return;
     }
 
-    my %args = split /\s+/ => $transport_args;
-
     # we do extra validation for Metabase and offer to create the profile
     if ( $transport eq 'Metabase' ) {
-        unless ( $args{uri} ) {
+        unless ( $transport_args =~ /\buri\s+\S+/ ) {
             $self->mywarn(
                 "\nPlease provide a target uri.\n\n"
             );
             return;
         }
 
-        unless ( $args{id_file} ) {
+        unless ( $transport_args =~ /\bid_file\s+(\S.+?)\s*$/ ) {
             $self->mywarn(
                 "\nPlease specify an id_file path.\n\n"
             );
             return;
         }
 
-        my $id_file = $self->_normalize_id_file($args{id_file});
+        my $id_file = $self->_normalize_id_file($1);
 
         # Offer to create if it doesn't exist
         if ( ! -e $id_file )  {
@@ -692,11 +693,7 @@ END_ID_FILE
             }
         }
         # Warn and fail validation if there but not readable
-        elsif (
-            not (     -r $id_file
-                  or  -r File::Spec->catdir( get_config_dir(), $id_file)
-                )
-        ) {
+        elsif (! -r $id_file) {
             $self->mywarn(
                 "'$id_file' was not readable.\n\n"
             );
@@ -704,13 +701,31 @@ END_ID_FILE
         }
 
         # when we store the transport args internally,
-        # we should use the normalized id_file.
-        $args{id_file} = $id_file;
+        # we should use the normalized id_file
+        # (always quoted to support spaces).
+        $transport_args =~ s/(\bid_file\s+)(\S.+?)\s*$/$1"$id_file"/;
     } # end Metabase
 
     $self->{_transport_name} = $transport;
-    $self->{_transport_args} = [ %args ];
+    $self->{_transport_args} = _parse_transport_args($transport_args);
     return 1;
+}
+
+# converts a string into a list of arguments for the transport module.
+# arguments are separated by spaces. If an argument has space, enclose it
+# using ' or ".
+sub _parse_transport_args {
+    my ($transport_args) = @_;
+    my @args;
+    while ($transport_args =~ /\s*((?:[^'"\s]\S*)|(["'])(?:\\?+.)*?\2)/g) {
+        my $arg = $1;
+        if ($2) {
+            $arg =~ s/\A(['"])(.+)\1\z/$2/;
+            $arg =~ s/\\(.)/$1/g;
+        }
+        push @args, $arg;
+    }
+    return \@args;
 }
 
 sub _validate_seconds {
