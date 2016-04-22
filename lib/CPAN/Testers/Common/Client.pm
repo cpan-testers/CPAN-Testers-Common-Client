@@ -407,26 +407,24 @@ sub _format_prereq_report {
 sub _get_env_vars {
     # Entries bracketed with "/" are taken to be a regex; otherwise literal
     my @env_vars= qw(
-        /PERL/
+        /HARNESS/
         /LC_/
-        /AUTHOR_TEST/
-        /RELEASE_TEST/
+        /PERL/
+        /_TEST/
+        COMSPEC
+        INCLUDE
         LANG
         LANGUAGE
+        LD_LIBRARY_PATH
+        LIB
+        NUMBER_OF_PROCESSORS
         PATH
+        PROCESSOR_IDENTIFIER
         SHELL
-        COMSPEC
         TERM
         TEMP
         TMPDIR
-        AUTOMATED_TESTING
         NON_INTERACTIVE
-        EXTENDED_TESTING
-        INCLUDE
-        LIB
-        LD_LIBRARY_PATH
-        PROCESSOR_IDENTIFIER
-        NUMBER_OF_PROCESSORS
     );
 
     my %env_found = ();
