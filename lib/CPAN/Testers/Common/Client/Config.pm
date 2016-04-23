@@ -424,7 +424,7 @@ sub _config_data {
 
 sub _config_data_for {
     my ($self, $type, $grade) = @_;
-    my %spec = $self->config_spec;
+    my %spec = $self->_config_spec;
     my $data = exists $self->{_config}{$type} ? $self->{_config}{$type} : q();
 
     my $dispatch = $spec{$type}{validate}->(

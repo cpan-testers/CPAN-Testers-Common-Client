@@ -46,7 +46,7 @@ is_deeply(
 my $td = tempdir(File::Spec->catdir('t', 'cf XXXX'), CLEANUP => 1);
 to_file(File::Spec->catfile($td, 'config.ini'), <<'EOF');
 edit_report=default:ask/no pass/na:no
-email_from=bogus@cpan.org
+email_from=Some User (SOMEUSER) <bogus@cpan.org>
 send_report=default:ask/yes pass/na:yes
 transport=Metabase uri https://metabase.cpantesters.org/api/v1/ id_file metabase_id.json
 EOF
@@ -83,6 +83,14 @@ for my $method (qw(myprompt mywarn myprint read)) {
     eval { $config->$method };
     is $@, '', $method;
 }
+
+is(
+    $config->email_from,
+    'Some User (SOMEUSER) <bogus@cpan.org>',
+    'got the right email_from'
+);
+
+is $config->transport_name, 'Metabase', 'found right transport name';
 
 my %args = @{ $config->transport_args };
 is_deeply \%args, {
