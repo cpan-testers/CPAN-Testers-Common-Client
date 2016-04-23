@@ -1,5 +1,13 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.11  2016-04-23
+      - ability to use paths with namespaces (Ed J)
+      - improved transport argument parsing
+      - improved documentation
+      - display CCFLAGS/LDFLAGS environment variables on report
+      - prerequisites check improved
+      - increased test coverage
+
 0.10  2015-04-19
       - is_duplicate() and record_history() available as methods
         from within CTCC.
