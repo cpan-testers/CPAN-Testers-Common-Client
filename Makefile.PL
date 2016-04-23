@@ -21,6 +21,7 @@ WriteMakefile(
         'Test::More'            => 0,
         'Fcntl'                 => 0,
         'IO::File'              => 0,
+        'CPAN::Version'         => 0,
 
         # C:T:C:C:Config also relies on:
         'File::HomeDir' => 0.58,
