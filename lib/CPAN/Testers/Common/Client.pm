@@ -411,11 +411,13 @@ sub _get_env_vars {
         /LC_/
         /PERL/
         /_TEST/
+        CCFLAGS
         COMSPEC
         INCLUDE
         LANG
         LANGUAGE
         LD_LIBRARY_PATH
+        LDFLAGS
         LIB
         NUMBER_OF_PROCESSORS
         PATH
