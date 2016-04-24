@@ -470,7 +470,9 @@ sub _normalize_id_file {
     my ($self, $id_file) = @_;
 
     # if file path is enclosed in quotes, remove them:
-    $id_file =~ s/\A(['"])(.+)\1\z/$2/;
+    if ($id_file =~ s/\A(['"])(.+)\1\z/$2/) {
+        $id_file =~ s/\\(.)/$1/g;
+    }
 
     # Windows does not use ~ to signify a home directory
     if ( $^O eq 'MSWin32' && $id_file =~ m{^~/(.*)} ) {
@@ -703,6 +705,10 @@ END_ID_FILE
         # when we store the transport args internally,
         # we should use the normalized id_file
         # (always quoted to support spaces).
+        # Since _normalize_id_file removed '\' from the path in order
+        # to test the real file path, we now need to put them back if we
+        # have them, as _parse_transport_args expects '\\' instead of '\':
+        $id_file =~ s/\\/\\\\/g;
         $transport_args =~ s/(\bid_file\s+)(\S.+?)\s*$/$1"$id_file"/;
     } # end Metabase
 
