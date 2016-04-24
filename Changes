@@ -1,5 +1,8 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.13  2016-04-24
+      - fixed long path issue on Windows
+
 0.12  2016-04-24
       - expand list of environment variables included in reports
 
