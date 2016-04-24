@@ -1,5 +1,8 @@
 Revision history for CPAN-Testers-Common-Client
 
+0.12  2016-04-24
+      - expand list of environment variables included in reports
+
 0.11  2016-04-23
       - ability to use paths with namespaces (Ed J)
       - improved transport argument parsing
