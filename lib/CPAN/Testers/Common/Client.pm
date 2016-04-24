@@ -414,19 +414,21 @@ sub _get_env_vars {
         CCFLAGS
         COMSPEC
         INCLUDE
+        INSTALL_BASE
         LANG
         LANGUAGE
         LD_LIBRARY_PATH
         LDFLAGS
         LIB
+        NON_INTERACTIVE
         NUMBER_OF_PROCESSORS
         PATH
+        PREFIX
         PROCESSOR_IDENTIFIER
         SHELL
         TERM
         TEMP
         TMPDIR
-        NON_INTERACTIVE
     );
 
     my %env_found = ();
