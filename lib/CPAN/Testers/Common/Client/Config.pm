@@ -18,7 +18,7 @@ sub new {
         _config => {},
     }, $class;
 
-    my $warn = exists $args{'warn'} ? $args{'warn'} : \&CORE::warn;
+    my $warn = exists $args{'warn'} ? $args{'warn'} : sub { warn @_ };
     $self->_set_mywarn( $warn )
         or Carp::croak q(the 'warn' parameter must be a coderef);
 
